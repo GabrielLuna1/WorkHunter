@@ -18,7 +18,7 @@ python --version
 
 :: Verificar dependencias do backend
 echo [Backend] Verificando dependencias...
-cd /d D:\WorkPlus\backend
+cd /d D:\Work\backend
 pip show weasyprint >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo [Backend] Dependencias faltando. Instalando...
@@ -29,28 +29,28 @@ if %ERRORLEVEL% neq 0 (
 
 :: Iniciar Backend (com terminal visivel + log)
 echo [Backend] Iniciando FastAPI na porta 8070...
-start "WorkPlus-Backend" cmd /c "cd /d D:\WorkPlus\backend && python -m uvicorn main:app --reload --port 8070 --log-level debug"
+start "WorkPlus-Backend" cmd /c "cd /d D:\Work\backend && python -m uvicorn main:app --reload --port 8070 --log-level debug"
 
 :: Esperar 3s e verificar se backend subiu
 timeout /t 3 /nobreak >nul
 powershell -Command "if (-not (Get-CimInstance Win32_Process -Filter \"Name='python.exe' AND CommandLine LIKE '%%uvicorn%%'\" -ErrorAction SilentlyContinue)) { Write-Host '[AVISO] Backend pode nao ter iniciado. Verifique backend\backend.log' -ForegroundColor Yellow } else { Write-Host '[OK] Backend rodando' -ForegroundColor Green }"
 
 :: Instalar dependencias do frontend se necessario
-if not exist "D:\WorkPlus\frontend\node_modules" (
+if not exist "D:\Work\frontend\node_modules" (
     echo [Frontend] node_modules nao encontrado. Instalando dependencias...
-    cd /d D:\WorkPlus\frontend
+    cd /d D:\Work\frontend
     call npm install
     if %ERRORLEVEL% neq 0 (
         echo [ERRO] npm install falhou. Verifique o erro acima.
         pause
         exit /b 1
     )
-    cd /d D:\WorkPlus
+    cd /d D:\Work
 )
 
 :: Iniciar Frontend
 echo [Frontend] Iniciando Next.js na porta 3000...
-start "WorkPlus-Frontend" cmd /c "cd /d D:\WorkPlus\frontend && npm run dev"
+start "WorkPlus-Frontend" cmd /c "cd /d D:\Work\frontend && npm run dev"
 
 echo.
 echo ========================================
