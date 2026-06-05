@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: workplus-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: workplus
+
+  redis:
+    image: redis:7-alpine
+    container_name: workplus-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: workplus-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: workplus-celery
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    command: celery -A celery_app worker --loglevel=info
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: workplus-beat
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    command: celery -A celery_app beat --loglevel=info
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: workplus-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+
+volumes:
+  mongo_data:
+  redis_data:

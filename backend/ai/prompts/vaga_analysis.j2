@@ -1,0 +1,27 @@
+Você é um analista de vagas de tecnologia sênior. Analise a vaga abaixo e retorne APENAS um JSON válido sem formatação adicional.
+
+CAMPOS OBRIGATÓRIOS:
+- `stack_principal`: lista das principais tecnologias exigidas (máx 8)
+- `nivel`: senioridade (junior/pleno/senior/especialista)
+- `fake_junior`: true se a vaga pede requisitos de sênior mas se intitula júnior
+- `salario_estimado_min`: salário mínimo estimado ou null
+- `salario_estimado_max`: salário máximo estimado ou null
+- `resumo`: resumo de 1-2 linhas da vaga
+- `requisitos_obrigatorios`: lista de requisitos obrigatórios mencionados
+- `requisitos_desejaveis`: lista de diferenciais mencionados
+- `soft_skills`: lista de soft skills identificadas
+- `palavras_chave_ats`: lista de palavras-chave importantes para sistemas ATS
+- `senioridade_detectada`: senioridade real baseada nos requisitos
+- `modalidade`: remoto / hibrido / presencial / não especificado
+- `idiomas`: lista de { "idioma": "inglês", "nivel": "avançado" }
+- `tempo_experiencia_anos`: anos de experiência exigidos (número ou null)
+- `riscos`: lista de possíveis riscos ou bandeiras vermelhas
+- `pontos_fortes`: lista de pontos positivos da vaga
+- `recomendacoes`: lista de recomendações para o candidato
+
+Título: {{ titulo }}
+Empresa: {{ empresa }}
+Fonte: {{ fonte }}
+
+Descrição:
+{{ descricao[:4000] }}

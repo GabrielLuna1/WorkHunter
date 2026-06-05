@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: -0.01em;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-poppins), var(--font-inter), sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Subtle grid background from CityLeads */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(35, 37, 42, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 37, 42, 0.3) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 70%);
+}
+
+/* Subtle noise texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.hairline.DEFAULT');
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.hairline.strong');
+}
+
+@layer utilities {
+  .delay-100 { animation-delay: 0.05s; }
+  .delay-200 { animation-delay: 0.1s; }
+  .delay-300 { animation-delay: 0.15s; }
+  .delay-400 { animation-delay: 0.2s; }
+  .delay-500 { animation-delay: 0.25s; }
+
+  /* Card hover glow effect */
+  .card-glow {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-glow:hover {
+    border-color: theme('colors.hairline.strong');
+    box-shadow: 0 0 0 1px theme('colors.hairline.strong'), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Stat card subtle gradient */
+  .stat-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, theme('colors.hairline.strong'), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .stat-card:hover::before {
+    opacity: 1;
+  }
+
+  /* Active nav indicator */
+  .nav-active {
+    position: relative;
+    background: linear-gradient(145deg, rgba(212, 175, 55, 0.1), rgba(15, 16, 17, 0.4));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .nav-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 16px;
+    background: theme('colors.accent.DEFAULT');
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  }
+
+  /* Metallic Gradient */
+  .metallic-gradient {
+    background: linear-gradient(135deg, #FFF6D3 0%, #D4AF37 35%, #8A6D3B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+  }
+}

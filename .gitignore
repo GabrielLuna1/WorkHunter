@@ -1,0 +1,40 @@
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+
+# Currículos — arquivos pessoais com dados sensíveis
+uploads/curriculos/
+curriculos/
+storage/curriculo.pdf
+
+*.pdf
+*.docx
+
+# Logs
+*.log
+backend/backend.log
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Debug / temp files
+old_*.py
+_sandbox_*.py
+_inspect_*.py
+server_err.txt
+
+# Local env (Next.js overrides)
+.env.local
+
+# Local tool configs
+.superpowers/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
