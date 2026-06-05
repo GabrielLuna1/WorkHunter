@@ -17,6 +17,16 @@ const ETAPA_LABELS: Record<string, string> = {
   rejeitado: "Rejeitado",
 };
 
+function formatLocalDatetime(iso: string): string {
+  const d = new Date(iso);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export function JobDetailSheet({
   job,
   open,
@@ -32,7 +42,7 @@ export function JobDetailSheet({
 }) {
   const [notas, setNotas] = useState(job?.notas || "");
   const [proximaAcao, setProximaAcao] = useState(job?.proxima_acao || "");
-  const [proximaData, setProximaData] = useState(job?.proxima_data ? new Date(job.proxima_data).toISOString().slice(0, 16) : "");
+  const [proximaData, setProximaData] = useState(job?.proxima_data ? formatLocalDatetime(job.proxima_data) : "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -40,7 +50,7 @@ export function JobDetailSheet({
     if (job) {
       setNotas(job.notas || "");
       setProximaAcao(job.proxima_acao || "");
-      setProximaData(job.proxima_data ? new Date(job.proxima_data).toISOString().slice(0, 16) : "");
+      setProximaData(job.proxima_data ? formatLocalDatetime(job.proxima_data) : "");
     }
   }, [job]);
 
@@ -52,7 +62,12 @@ export function JobDetailSheet({
       const body: Partial<{ notas: string; proxima_acao: string; proxima_data: string }> = {};
       if (notas) body.notas = notas;
       if (proximaAcao) body.proxima_acao = proximaAcao;
-      if (proximaData) body.proxima_data = new Date(proximaData).toISOString();
+      if (proximaData) {
+        const [date, time] = proximaData.split("T");
+        const [y, m, d] = date.split("-").map(Number);
+        const [h, min] = time.split(":").map(Number);
+        body.proxima_data = new Date(y, m - 1, d, h, min).toISOString();
+      }
       await atualizarPipeline(job.id, body);
       await syncPipelineEventos().catch(() => {});
       setSaved(true);

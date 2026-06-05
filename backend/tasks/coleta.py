@@ -1,4 +1,5 @@
-﻿from celery import shared_task
+﻿import asyncio
+from celery import shared_task
 from motor.motor_asyncio import AsyncIOMotorClient
 from core.config import settings
 from core.logger import logger
@@ -18,8 +19,6 @@ from services.telegram_bot import notificar_match, notificar_resumo_diario
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def coletar_vagas(self):
-    import asyncio
-
     asyncio.run(_coletar())
 
 
@@ -48,9 +47,11 @@ async def _coletar():
     vagas_brutas = []
     for c in coletores:
         try:
-            vagas = await c.coletar()
+            vagas = await asyncio.wait_for(c.coletar(), timeout=120.0)
             vagas_brutas.extend(vagas)
             logger.info("coleta.coletor_ok", fonte=c.nome, total=len(vagas))
+        except asyncio.TimeoutError:
+            logger.warning("coleta.coletor_timeout", fonte=c.nome)
         except Exception as e:
             logger.warning("coleta.coletor_erro", fonte=c.nome, error=str(e))
 
@@ -144,8 +145,6 @@ async def _coletar():
 
 @shared_task
 def resumo_diario():
-    import asyncio
-
     asyncio.run(_enviar_resumo_diario())
 
 

@@ -97,7 +97,7 @@ export default function Home() {
         const data = res.data;
         setStatusColeta(data);
         
-        if (data.status === "concluido" || data.status === "erro" || data.status === "ocioso") {
+        if (data.status === "concluido" || data.status === "erro" || data.status === "ocioso" || data.status === "cancelado") {
           setColetando(false);
           await carregar();
           if (data.status === "concluido") {
@@ -135,6 +135,15 @@ export default function Home() {
     } catch {
       setErro("Falha ao iniciar a coleta de vagas.");
       setColetando(false);
+    }
+  };
+
+  const handleCancelarColeta = async () => {
+    try {
+      await api.post("/api/v1/sistema/coletar-agora/cancelar");
+      setStatusColeta((prev) => prev ? { ...prev, status: "cancelado", mensagem: "Cancelando..." } : prev);
+    } catch {
+      // silent
     }
   };
 
@@ -266,11 +275,19 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold metallic-gradient font-heading">
-                  {statusColeta.progresso}%
-                </span>
-                <p className="text-[10px] text-ink-tertiary uppercase tracking-wider font-semibold">Progresso</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCancelarColeta}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-md border border-danger/30 bg-danger/10 text-danger hover:bg-danger/20 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <div className="text-right">
+                  <span className="text-2xl font-bold metallic-gradient font-heading">
+                    {statusColeta.progresso}%
+                  </span>
+                  <p className="text-[10px] text-ink-tertiary uppercase tracking-wider font-semibold">Progresso</p>
+                </div>
               </div>
             </div>
 

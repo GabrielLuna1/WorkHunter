@@ -510,8 +510,8 @@ def _normalize_for_matching(text: str) -> str:
     text = text.lower().strip().rstrip(":").strip()
     text = re.sub(r"\s*\(.*?\)\s*", "", text).strip()
     text = re.sub(r"\s*&.*$", "", text).strip()
-    text = text.replace("-", " ").replace("â€“", " ").replace("â€”", " ")
-    text = re.sub(r"[^a-z0-9Ã¡Ã©Ã­Ã³ÃºÃ£ÃµÃ¢ÃªÃ´Ã§Ã Ã¼Ã±\s]", "", text)
+    text = text.replace("-", " ").replace("–", " ").replace("—", " ")
+    text = re.sub(r"[^a-z0-9áéíóúãõâêôçàüñ\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 

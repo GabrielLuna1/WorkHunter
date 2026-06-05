@@ -118,10 +118,10 @@ def extrair_uf(localizacao: Optional[str]) -> Optional[str]:
     texto = localizacao.strip()
 
     # Remove sufixos como " - 28/05/26" (datas do APInfo)
-    texto = re.sub(r"\s*[-â€“]\s*\d{2}/\d{2}/\d{2,4}\s*$", "", texto)
+    texto = re.sub(r"\s*[-–]\s*\d{2}/\d{2}/\d{2,4}\s*$", "", texto)
 
     # 1. "Cidade - UF" ou "Cidade, UF"
-    m = re.search(r"[-â€“,]\s*([A-Za-z]{2})\s*$", texto)
+    m = re.search(r"[-–,]\s*([A-Za-z]{2})\s*$", texto)
     if m:
         uf = m.group(1).upper()
         if uf in UFS_BRASIL_SET:
@@ -141,7 +141,7 @@ def extrair_uf(localizacao: Optional[str]) -> Optional[str]:
         return None  # Remoto nao tem UF
 
     # 4. Tenta match por cidade conhecida
-    cidade_limpa = re.sub(r"[^a-zA-ZÃ€-Ã¿\s]", "", texto).strip().lower()
+    cidade_limpa = re.sub(r"[^a-zA-ZÀ-ÿ\s]", "", texto).strip().lower()
     for cidade, uf in CIDADE_UF_DIRETA.items():
         if cidade == cidade_limpa or cidade in cidade_limpa:
             return uf

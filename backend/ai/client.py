@@ -127,7 +127,6 @@ async def _call_with_retry(
     providers = [
         settings.ai_provider_primary,
         settings.ai_provider_fallback,
-        settings.ai_provider_tertiary,
     ]
 
     for attempt in range(settings.ai_retry_max):
@@ -246,7 +245,6 @@ async def chat_stream(
     providers = [
         settings.ai_provider_primary,
         settings.ai_provider_fallback,
-        settings.ai_provider_tertiary,
     ]
 
     for provider in providers:

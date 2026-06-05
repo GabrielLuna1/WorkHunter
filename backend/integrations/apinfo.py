@@ -22,6 +22,17 @@ class APInfoCollector(BaseCollector):
         vistos: set = set()
         logger.info("apinfo.iniciando", termos=self.termos)
 
+        try:
+            return await asyncio.wait_for(
+                self._coletar_interno(vagas, vistos), timeout=30.0
+            )
+        except asyncio.TimeoutError:
+            logger.warning("apinfo.timeout_30s")
+            return vagas
+
+    async def _coletar_interno(self, vagas, vistos) -> List[VagaBruta]:
+        logger.info("apinfo.coletar_interno")
+
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -31,7 +42,7 @@ class APInfoCollector(BaseCollector):
         }
 
         async with httpx.AsyncClient(
-            follow_redirects=True, timeout=30, headers=headers
+            follow_redirects=True, timeout=15, headers=headers
         ) as client:
             for termo in self.termos:
                 try:
@@ -89,11 +100,11 @@ class APInfoCollector(BaseCollector):
             if m:
                 total_paginas = int(m.group(1))
 
-        max_paginas = min(total_paginas, 5)  # Limite de 5 pÃ¡ginas
+        max_paginas = min(total_paginas, 2)  # Limite de 2 páginas
 
         for pagina in range(1, max_paginas + 1):
             if pagina > 1:
-                await asyncio.sleep(3.5)
+                await asyncio.sleep(1)
                 data["pag"] = str(pagina)
                 data["pkey"] = pkey
                 data["tcv"] = tcv
@@ -163,10 +174,9 @@ class APInfoCollector(BaseCollector):
         # DescriÃ§Ã£o
         descricao = ""
         if texto_div:
-            desc_p = (
-                texto_div.select_one('p[style*="white-space:pre-wrap"]')
-                or texto_div.select_one("p")
-            )
+            desc_p = texto_div.select_one(
+                'p[style*="white-space:pre-wrap"]'
+            ) or texto_div.select_one("p")
             if desc_p:
                 descricao = desc_p.get_text(" ", strip=True)
 

@@ -51,14 +51,21 @@ async def health(db: AsyncIOMotorDatabase = Depends(get_db)):
     return stats
 
 
+_coleta_em_andamento = False
+
+
 @router.post("/coletar-agora")
 async def coletar_agora(
     background_tasks: BackgroundTasks, payload: dict = Body(default={})
 ):
-    """
-    Inicia o processo de coleta manual em background.
-    Aceita 'termo_busca' (str), 'termos' (list[str]) ou usa os termos do PerfilUsuario.
-    """
+    global _coleta_em_andamento
+
+    if _coleta_em_andamento:
+        raise HTTPException(
+            status_code=409,
+            detail="Já existe uma coleta em andamento. Aguarde a conclusão antes de iniciar outra.",
+        )
+
     raw_termos = payload.get("termos") or []
     termo_busca = payload.get("termo_busca")
 
@@ -73,9 +80,10 @@ async def coletar_agora(
     if not termos:
         raise HTTPException(
             status_code=400,
-            detail="Nenhum termo de busca encontrado no perfil. Preencha seus cargos alvo ou Ã¡rea de foco.",
+            detail="Nenhum termo de busca encontrado no perfil. Preencha seus cargos alvo ou área de foco.",
         )
 
+    _coleta_em_andamento = True
     background_tasks.add_task(executar_coleta, termos)
     return {
         "status": "iniciado",
@@ -84,7 +92,31 @@ async def coletar_agora(
     }
 
 
+@router.post("/coletar-agora/cancelar")
+async def cancelar_coleta():
+    global _coleta_em_andamento
+    db = database.get_db()
+    from datetime import datetime
+
+    await db["coleta_status"].update_one(
+        {"_id": "status"},
+        {
+            "$set": {
+                "status": "cancelado",
+                "mensagem": "Coleta cancelada pelo usuário.",
+                "progresso": 100,
+                "coletor_atual": "",
+                "atualizado_em": datetime.utcnow(),
+            },
+            "$push": {"detalhes": "⏹️ Coleta cancelada manualmente."},
+        },
+    )
+    _coleta_em_andamento = False
+    return {"status": "cancelado", "mensagem": "Coleta cancelada."}
+
+
 async def executar_coleta(termos: list[str]):
+    global _coleta_em_andamento
     db = database.get_db()
     from datetime import datetime
 
@@ -152,6 +184,13 @@ async def executar_coleta(termos: list[str]):
         total_coletores = len(todos_coletores)
 
         for idx, (nome_exibivel, collector) in enumerate(todos_coletores):
+            # Verifica se o usuário cancelou
+            status_doc = await db["coleta_status"].find_one({"_id": "status"})
+            if status_doc and status_doc.get("status") == "cancelado":
+                logger.info("coleta.cancelada_pelo_usuario")
+                _coleta_em_andamento = False
+                return
+
             progresso = int(5 + (idx / total_coletores) * 75)  # 5% a 80%
             await db["coleta_status"].update_one(
                 {"_id": "status"},
@@ -167,7 +206,7 @@ async def executar_coleta(termos: list[str]):
             )
 
             try:
-                vagas = await collector.coletar()
+                vagas = await asyncio.wait_for(collector.coletar(), timeout=180.0)
                 vagas_brutas.extend(vagas)
                 logger.info("coleta.coletor_ok", fonte=collector.nome, total=len(vagas))
 
@@ -175,7 +214,17 @@ async def executar_coleta(termos: list[str]):
                     {"_id": "status"},
                     {
                         "$push": {
-                            "detalhes": f"âœ“ {nome_exibivel}: {len(vagas)} vagas encontradas"
+                            "detalhes": f"✓ {nome_exibivel}: {len(vagas)} vagas encontradas"
+                        }
+                    },
+                )
+            except asyncio.TimeoutError:
+                logger.warning("coleta.coletor_timeout", fonte=collector.nome)
+                await db["coleta_status"].update_one(
+                    {"_id": "status"},
+                    {
+                        "$push": {
+                            "detalhes": f"⏰ {nome_exibivel}: timeout após 120s — pulando"
                         }
                     },
                 )
@@ -185,7 +234,7 @@ async def executar_coleta(termos: list[str]):
                 )
                 await db["coleta_status"].update_one(
                     {"_id": "status"},
-                    {"$push": {"detalhes": f"âŒ {nome_exibivel}: falha ({str(e)})"}},
+                    {"$push": {"detalhes": f"❌ {nome_exibivel}: falha ({str(e)})"}},
                 )
 
         await db["coleta_status"].update_one(
@@ -367,7 +416,7 @@ async def executar_coleta(termos: list[str]):
             {
                 "$set": {
                     "status": "concluido",
-                    "mensagem": f"Coleta concluÃ­da! {inseridas} novas vagas adicionadas.",
+                    "mensagem": f"Coleta concluída! {inseridas} novas vagas adicionadas.",
                     "progresso": 100,
                     "coletor_atual": "",
                     "atualizado_em": datetime.utcnow(),
@@ -378,7 +427,10 @@ async def executar_coleta(termos: list[str]):
             },
         )
 
+        _coleta_em_andamento = False
+
     except Exception as e:
+        _coleta_em_andamento = False
         logger.error("coleta.erro_geral", error=str(e))
         import traceback
 

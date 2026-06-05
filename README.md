@@ -27,6 +27,8 @@
 > WorkPlus centraliza vagas de tecnologia de 12 fontes, aplica match score por IA local e organiza tudo em um pipeline kanban — coleta, analisa e acompanha oportunidades sem você precisar visitar dezenas de sites manualmente.
 >
 > ⚠️ O WorkPlus **não envia currículos, não preenche formulários e não se candidata automaticamente**. Todo o processo de aplicação é manual e intencional, feito diretamente no site de cada empresa. O sistema cuida da etapa anterior: a inteligência de mercado, a triagem e a organização — para que você chegue ao momento de aplicar já com informação suficiente para decidir se aquela vaga vale seu tempo.
+>
+> 📌 **Aviso Legal:** WorkPlus é um projeto **open source educacional**, não afiliado a nenhuma das plataformas ou portais listados. O sistema opera com limites responsáveis de requisições e respeito a `robots.txt`. Cada usuário é responsável por verificar os Termos de Serviço das fontes que utiliza. Nenhum dado pessoal é enviado a servidores externos — toda a IA roda localmente via LM Studio.
 
 [⚡ Quick Start](#-quick-start) •
 [🧠 Features](#-features) •
@@ -186,6 +188,410 @@ Perfil do Usuário (termos de busca)
                        ▼
                   MongoDB (workplus)
 ```
+
+---
+
+## 🔄 Fluxo do Usuário
+
+### Visão Macro — Navegação entre Módulos
+
+```mermaid
+flowchart TB
+  subgraph NAV["🧭 Sidebar (280px fixa)"]
+    direction TB
+    n1["Discovery /"]
+    n2["Copilot /hub"]
+    n3["Pipeline /kanban"]
+    n4["Vagas /vagas"]
+    n5["Currículo /curriculo"]
+    n6["Analytics /analytics"]
+    n7["Calendário /calendar"]
+  end
+
+  subgraph CROSS["Conexões entre Módulos"]
+    direction LR
+
+    n1 -- "Explorar Todas →" --> n4
+    n1 -- "Ver Kanban →" --> n3
+    n1 -- "Salvar vaga" --> n3
+
+    n4 -- "Analisar → abre chat\ncom contexto da vaga" --> n2
+    n4 -- "Salvar / Aplicar" --> n3
+
+    n2 -- "analyze_vaga\ncalcular_match" --> DB_ANALYSIS[("vaga_analysis\nmatch_results")]
+    n2 -- "pipeline_status" --> n3
+    n2 -- "Usa CV ativo" --> n5
+
+    n3 -- "proxima_data →\nsync eventos" --> n7
+    n3 -- "Avançar etapa →\nTelegram" --> TG["📱 Telegram"]
+
+    n5 -- "CV ativo →\nmatch + cover letter" --> n2
+
+    n6 -- "Dados agregados de" --> n4
+    n6 -- "Dados agregados de" --> n3
+    n6 -- "Config Telegram" --> TG
+
+    n7 -- "Eventos sincronizados\ndo Pipeline" --> n3
+  end
+
+  style NAV fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style CROSS fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style DB_ANALYSIS fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style TG fill:#0e2a1f,stroke:#26a641,color:#26a641
+```
+
+### Jornada Completa — End to End
+
+```mermaid
+flowchart TD
+  START(("🚀 Início")) --> UPLOAD_CV["1. Upload Currículo\n/curriculo"]
+  UPLOAD_CV --> COLETA["2. Iniciar Coleta\n/discovery"]
+  COLETA --> BROWSE["3. Explorar Vagas\n/vagas (filtros + bulk match)"]
+
+  BROWSE --> ANALYZE["4. Analisar com IA\n/hub (analyze_vaga)"]
+  ANALYZE --> MATCH["5. Calcular Match\n/hub (calcular_match)"]
+  MATCH --> DECIDE{"Score bom?"}
+
+  DECIDE -- "Sim ≥70" --> SAVE_PIPE["6. Salvar no Pipeline\netapa: salva"]
+  DECIDE -- "Não" --> BROWSE
+
+  SAVE_PIPE --> APPLY["7. Aplicar\netapa: aplicada"]
+  APPLY --> COVER["8. Gerar Cover Letter\n/hub (gerar_cover_letter)"]
+
+  COVER --> ADVANCE["9. Avançar Etapas\n/kanban (drag & drop)"]
+
+  ADVANCE --> SCHEDULE["10. Agendar Entrevista\n(proxima_data)\n→ sync /calendar"]
+
+  SCHEDULE --> INTERVIEW["11. Entrevista\n/calendar (consultar)"]
+
+  INTERVIEW --> RESULT{"Resultado?"}
+  RESULT -- "✅ Aprovado" --> HIRED["🎉 Contratado"]
+  RESULT -- "❌ Reprovado" --> REJECTED["Rejeitado"]
+  RESULT -- "↩️ Próxima fase" --> ADVANCE
+
+  BROWSE -. "Monitorar tendências" .-> ANALYTICS["📊 Analytics\n/analytics"]
+  COLETA -. "Match ≥85" .-> TG_ALERT["📱 Telegram Alert"]
+  ADVANCE -. "Mudança de etapa" .-> TG_PIPE["📱 Telegram Update"]
+
+  style START fill:#d4a843,stroke:#d4a843,color:#1a1a2e
+  style HIRED fill:#0e2a1f,stroke:#26a641,color:#26a641
+  style REJECTED fill:#2e0e0e,stroke:#f85149,color:#f85149
+  style DECIDE fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style RESULT fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+```
+
+<details>
+<summary><strong>📊 Discovery — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  ENTRY["Usuário abre o app"] --> DISC["📊 Discovery"]
+
+  DISC --> OV["Overview Cards\n• Total Radar\n• Match Score médio\n• Fake Junior count\n• Top Matches ≥85"]
+  DISC --> COLETA["🔄 Iniciar Coleta"]
+  DISC --> GRID["📋 Últimas 20 Vagas\n(grid 3 colunas)"]
+  DISC --> PIPE_SUM["Pipeline Summary\n(contadores por etapa)"]
+  DISC --> ALERTS["🚨 High-Score ≥85\nOportunidades"]
+
+  COLETA --> COLETA_FLOW["Termo de busca →\nPOST /sistema/coletar-agora\n→ Polling progresso\n→ Cancel disponível"]
+
+  GRID --> ACT_EXT["🔗 Abrir URL externa"]
+  GRID --> ACT_AI["🤖 Analisar com IA\n→ salva em vaga_analysis"]
+  GRID --> ACT_SAVE["💾 Salvar no Pipeline\n→ etapa: salva\n→ sync eventos"]
+
+  PIPE_SUM -- "Link" --> KANBAN["/kanban"]
+  ALERTS -- "Investigar" --> HUB_VAGA["/hub com contexto"]
+  GRID -- "Explorar Todas" --> VAGAS["/vagas"]
+
+  style DISC fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style COLETA fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style ACT_AI fill:#1a2e1a,stroke:#26a641,color:#26a641
+  style ACT_SAVE fill:#1a2e1a,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>🤖 Copilot Hub — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  HUB["🤖 Copilot Hub\n(2 painéis redimensionáveis)"] --> LEFT["⬅ Painel Esquerdo\nHubChat"]
+  HUB --> RIGHT["➡ Painel Direito\nHubContext"]
+
+  LEFT --> SESS["Sessões (tabs)\n• Ctrl+N: Nova\n• Delete: Excluir\n• Até 10 tabs"]
+  LEFT --> MSG["Enviar Mensagem\n→ SSE Streaming"]
+
+  MSG --> STREAM["Eventos SSE:\nreasoning → content →\ntool_start → tool_result → done"]
+
+  STREAM --> TOOLS{"Tool Detectada?\n[TOOL:nome|params]"}
+  TOOLS -- "Sim" --> EXEC["Executa Handler\nno Backend"]
+  TOOLS -- "Não" --> RESP["Resposta texto\nno chat bubble"]
+
+  EXEC --> T1["analyze_vaga\n→ vaga_analysis"]
+  EXEC --> T2["calcular_match\n→ match_results"]
+  EXEC --> T3["analisar_match\n(read-only CV vs Vaga)"]
+  EXEC --> T4["pipeline_status\n(contadores)"]
+  EXEC --> T5["buscar_vagas\n(até 15 resultados)"]
+  EXEC --> T6["gerar_cover_letter\n(CV + Vaga)"]
+
+  T1 & T2 & T3 & T4 & T5 & T6 --> CTX_UPDATE["Atualiza\nPainel Direito"]
+
+  RIGHT --> VIEWS["Views Dinâmicas:\n• welcome (default)\n• vaga (detalhes)\n• analyze_vaga\n• calcular_match\n• pipeline_status\n• gerar_cover_letter\n• analisar_match\n• buscar_vagas\n• analise_completa\n• vagas_browser"]
+
+  LEFT --> QUICK["Quick Actions:\n• Pipeline Status\n• Analisar Vaga\n• Calcular Match\n• Cover Letter"]
+
+  LEFT --> BROWSER["📂 Mini Vaga Browser\nCtrl+Shift+B\n→ busca + scroll infinito\n→ click seleciona vaga"]
+
+  style HUB fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style TOOLS fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style CTX_UPDATE fill:#1a2e1a,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>📋 Pipeline / Kanban — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart LR
+  subgraph STAGES["8 Etapas do Pipeline"]
+    direction LR
+    S1["🔘 Salvas"] --> S2["🟡 Aplicadas"]
+    S2 --> S3["🟡 Em Análise"]
+    S3 --> S4["🟡 Entrevista RH"]
+    S4 --> S5["🟡 Entrevista Técnica"]
+    S5 --> S6["🟡 Teste Técnico"]
+    S6 --> S7["🟢 Contratado"]
+    S3 --> S8["🔴 Rejeitado"]
+  end
+
+  DND["🖱 Drag & Drop\n→ Optimistic UI\n→ PATCH etapa\n→ Reverte se erro"] --> STAGES
+
+  CARD["📇 Card Actions\n(JobDetailSheet)"] --> DETAIL["Slide-out:\n• Match score badge\n• Próxima Ação (input)\n• Data Próximo Contato\n• Notas (textarea)\n• Salvar → sync eventos\n• Portal da Vaga\n• Remover (confirm)"]
+
+  DETAIL -- "proxima_data" --> CAL["📅 Sync → Calendar"]
+  DND -- "Avançar etapa" --> TG["📱 Telegram\nnotificar_pipeline"]
+
+  FILTERS["Filtros:\n• Empresa (searchable)\n• Stats: total + conversão"] --> STAGES
+
+  style STAGES fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style DND fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style CAL fill:#0e1a2e,stroke:#58a6ff,color:#58a6ff
+  style TG fill:#0e2a1f,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>🔍 Vagas — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  VAGAS["📋 Vagas\n(paginada, 24/página)"] --> FILTERS
+
+  subgraph FILTERS["Barra de Filtros"]
+    F1["🔍 Busca texto"]
+    F2["📡 Fonte (12 opções)"]
+    F3["📍 Estado/UF"]
+    F4["🏠 Modelo\nRemoto · Híbrido · Presencial"]
+    F5["⭐ Score\nAny · ≥80 · ≥60 · ≥40"]
+    F6["📌 Status\nFav · Aplicada · Analisada\nIgnorada · Arquivada"]
+    F7["🔀 Ordenação\nData · Score · Salário\nEmpresa · Título"]
+    F8["🏷 Categoria (pills)"]
+  end
+
+  VAGAS --> VIEW["Toggle View:\n🔲 Grid (3 cols) · 📄 Lista"]
+
+  VIEW --> ACTIONS["Ações por Vaga"]
+  ACTIONS --> A1["❤️ Favoritar\n(optimistic UI)"]
+  ACTIONS --> A2["💾 Salvar → Pipeline\netapa: salva + sync"]
+  ACTIONS --> A3["📤 Aplicar → Pipeline\netapa: aplicada + sync"]
+  ACTIONS --> A4["🤖 Analisar\n→ Abre /hub\ncom contexto da vaga"]
+  ACTIONS --> A5["🔗 Link Externo"]
+
+  VAGAS --> BULK["Bulk Match Scores\nPOST /analise/match/bulk\n→ badges em cada card"]
+
+  FILTERS -. "searchParams\n(URL = source of truth)" .-> VAGAS
+
+  style VAGAS fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style FILTERS fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style A4 fill:#1a2e1a,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>📄 Currículo — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  CV["📄 Currículo"] --> CHECK{"Tem CV?"}
+
+  CHECK -- "Não" --> UPLOAD["⬆️ UploadZone\nDrag & Drop\n• Parser Inteligente\n• Preservação Total\n• Match Score"]
+
+  UPLOAD --> PARSE["Backend Parser\n→ nome, exp, formação,\nskills, projetos, idioma,\nconfidence score"]
+
+  PARSE --> SAVE["Salva em\ncurriculo_versoes"]
+
+  CHECK -- "Sim" --> LAYOUT["Layout 3 Colunas"]
+
+  LAYOUT --> SIDEBAR["⬅ VersaoSidebar\n• Selecionar versão\n• Duplicar\n• Deletar\n• Renomear\n• Definir padrão\n• Upload nova"]
+
+  LAYOUT --> VIEWER["📄 Document Viewer\n• Estruturado (parsed)\n• PDF Original (iframe)"]
+
+  LAYOUT --> INSIGHTS["💡 Insights Panel\n• Seções detectadas\n• Skills identificadas\n• Experiências\n• Idioma principal\n• Parser warnings"]
+
+  CV --> EXPORT["📥 Exportar\nPDF · DOCX"]
+
+  CV --> VERSOES["/curriculo/versoes\nHistórico com diff"]
+
+  SIDEBAR -- "CV Ativo usado por:" --> USED["🤖 calcular_match\n🤖 gerar_cover_letter\n🤖 contexto do chat\n🤖 otimizar_curriculo"]
+
+  style CV fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style UPLOAD fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+  style USED fill:#1a2e1a,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>📈 Analytics — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  ANA["📊 Analytics\n(10 chamadas paralelas)"] --> SECTION1
+  ANA --> SECTION2
+  ANA --> SECTION3
+
+  subgraph SECTION1["Radar de Mercado"]
+    C1["📊 Demandas Tecnológicas\n(horizontal bar, top 12)"]
+    C2["💰 Projeção Salarial\n(grouped bar, min/max)"]
+    C3["🛠 Skills em Alta\n(horizontal bar, top 12)"]
+    C4["📡 Distribuição por Fonte\n(donut pie)"]
+    C5["🎯 Senioridade Declarada\n(donut pie)"]
+    C6["📈 Volume Histórico\n(area chart, 30d)"]
+    C7["⭐ Score Médio por Fonte\n(bar chart)"]
+  end
+
+  subgraph SECTION2["Pipeline Analytics"]
+    P1["🔄 Funil do Pipeline\n(8 etapas, progress bars)\nTotal · Conversão · Rejeição"]
+  end
+
+  subgraph SECTION3["Chat Analytics"]
+    CH1["💬 4 Cards:\nSessões · Mensagens\nTools · Resultados"]
+    CH2["📊 Tools Executadas\n(bar chart)"]
+    CH3["📅 Atividade Diária 7d\n(bar chart)"]
+  end
+
+  ANA --> ALERTS["🚨 High-Score ≥85"]
+  ANA --> TG_BTN["⚙️ Config Telegram\n(abre modal)"]
+
+  style ANA fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style SECTION1 fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style SECTION2 fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style SECTION3 fill:#0d1117,stroke:#30363d,color:#f0f0f0
+```
+
+</details>
+
+<details>
+<summary><strong>📅 Calendário — Fluxo Detalhado</strong></summary>
+
+```mermaid
+flowchart TD
+  CAL["📅 Calendário"] --> VIEWS["Views:\n📅 Semana (7 cols, 7h-22h)\n📋 Dia (cards lista)"]
+
+  CAL --> TOOLBAR["Toolbar:\n🔄 Sincronizar Pipeline\n🧹 Limpar Órfãos\n📍 Hoje\n◀ ▶ Navegar\nDia / Semana toggle"]
+
+  SYNC["🔄 Sync Pipeline\nPOST /eventos/sync-pipeline"] --> TYPES
+
+  subgraph TYPES["Tipos de Evento"]
+    E1["🟡 Entrevista RH"]
+    E2["🟠 Entrevista Técnica"]
+    E3["🔵 Teste Técnico"]
+    E4["⚪ Follow-up"]
+  end
+
+  VIEWS --> CLICK["Click no Evento →\nModal Detalhes"]
+  CLICK --> M1["📋 Info: empresa,\ntipo, data, título,\nlocal, descrição"]
+  CLICK --> M2["🔗 Abrir Vaga (URL)"]
+  CLICK --> M3["🗑 Excluir (confirm)"]
+
+  TOOLBAR --> ORPHANS["Limpar Órfãos:\nRemove eventos cujo\npipeline_id não existe mais"]
+
+  NOTE["⚠️ Eventos NÃO são\ncriados manualmente.\nSempre via sync do Pipeline\n(proxima_data → evento)"]
+
+  style CAL fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style TYPES fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style NOTE fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+```
+
+</details>
+
+<details>
+<summary><strong>🗄️ Fluxo de Dados — MongoDB Collections</strong></summary>
+
+```mermaid
+flowchart LR
+  subgraph COLLECTIONS["MongoDB Collections"]
+    direction TB
+    V["vagas"]
+    VU["vagas_usuarios"]
+    P["pipeline"]
+    EV["eventos"]
+    CS["chat_sessoes"]
+    CM["chat_mensagens"]
+    VA["vaga_analysis"]
+    MR["match_results"]
+    CR["curriculo_versoes"]
+  end
+
+  subgraph RELATIONS["Relações"]
+    VU -- "vaga_id → _id" --> V
+    P -- "vaga_id → _id" --> V
+    EV -- "pipeline_id → _id" --> P
+    CM -- "sessao_id → _id" --> CS
+    VA -- "vaga_id → _id" --> V
+    MR -- "vaga_id → _id" --> V
+  end
+
+  subgraph WRITES["Quem Escreve"]
+    W_COLETA["Coleta\n(integradores)"] --> V
+    W_USER["Ações do\nUsuário"] --> VU
+    W_USER --> P
+    W_SYNC["Pipeline\nSync"] --> EV
+    W_CHAT["Chat\nIA"] --> CS
+    W_CHAT --> CM
+    W_TOOLS["AI Tools"] --> VA
+    W_TOOLS --> MR
+    W_UPLOAD["Upload /\nOtimizar"] --> CR
+  end
+
+  style COLLECTIONS fill:#1a1a2e,stroke:#d4a843,color:#f0f0f0
+  style RELATIONS fill:#0d1117,stroke:#30363d,color:#f0f0f0
+  style WRITES fill:#0e2a1f,stroke:#26a641,color:#26a641
+```
+
+</details>
+
+<details>
+<summary><strong>📱 Telegram — Gatilhos de Notificação</strong></summary>
+
+```mermaid
+flowchart LR
+  T1["📡 Pós-Coleta\nmatch ≥ 85"] -- "notificar_match" --> BOT["🤖 Telegram Bot\n(httpx → Bot API)"]
+  T2["🔄 Avançar Etapa\nPATCH /pipeline/etapa"] -- "notificar_pipeline" --> BOT
+  T3["⏰ Celery Beat\n8h diário"] -- "notificar_resumo_diario" --> BOT
+  BOT --> CHAT["📱 Chat do Usuário\n(HTML formatado)"]
+
+  CONFIG["⚙️ Config\n(Analytics page)\n• enabled toggle\n• chat_id\n• 3 toggles\n• test button"] --> BOT
+
+  style BOT fill:#0e2a1f,stroke:#26a641,color:#26a641
+  style CONFIG fill:#2d1f0e,stroke:#d4a843,color:#d4a843
+```
+
+</details>
 
 ---
 
@@ -389,6 +795,19 @@ LOG_LEVEL=INFO
 </details>
 
 ---
+
+---
+
+## ⚖️ Aviso Legal
+
+WorkPlus é um projeto **open source educacional**, criado como portfólio e ferramenta de uso pessoal.
+
+- **Não afiliado** a nenhuma das plataformas, portais ou empresas listadas
+- **Não automatiza candidaturas** — todo processo de aplicação é manual
+- **Respeita `robots.txt`** e opera com limites responsáveis de requisições
+- **IA 100% local** — nenhum dado pessoal sai da sua máquina
+- Cada usuário é responsável por verificar os Termos de Serviço das fontes que utiliza
+- Para uso comercial, consulte as autorizações necessárias junto a cada plataforma
 
 <div align="center">
 
