@@ -175,7 +175,7 @@ async def executar_coleta(termos: list[str]):
                 {"_id": "status"},
                 {
                     "$push": {
-                        "detalhes": "â° ATS: timeout apÃ³s 5 minutos â€” pulando para os demais coletores"
+                        "detalhes": "⏰ ATS: timeout após 5 minutos — pulando para os demais coletores"
                     }
                 },
             )
@@ -241,7 +241,7 @@ async def executar_coleta(termos: list[str]):
             {"_id": "status"},
             {
                 "$set": {
-                    "mensagem": "Fechando conexÃµes de navegadores...",
+                    "mensagem": "Fechando conexões de navegadores...",
                     "progresso": 82,
                     "coletor_atual": "Limpeza",
                     "atualizado_em": datetime.utcnow(),
@@ -286,16 +286,16 @@ async def executar_coleta(termos: list[str]):
             for vaga in novas:
                 vaga.modelo_trabalho = WorkModelExtractor.extrair(vaga)
 
-        # Filtro de relevÃ¢ncia antes de inserir
+        # Filtro de relevância antes de inserir
         filtradas_irrelevantes = 0
         if novas:
             await db["coleta_status"].update_one(
                 {"_id": "status"},
                 {
                     "$set": {
-                        "mensagem": "Aplicando filtros de relevÃ¢ncia...",
+                        "mensagem": "Aplicando filtros de relevância...",
                         "progresso": 90,
-                        "coletor_atual": "RelevÃ¢ncia",
+                        "coletor_atual": "Relevância",
                         "atualizado_em": datetime.utcnow(),
                     }
                 },
@@ -312,16 +312,16 @@ async def executar_coleta(termos: list[str]):
             relevance = RelevanceFilter(db)
             novas, filtradas_irrelevantes = await relevance.filtrar(novas, perfil)
 
-        # Filtro geogrÃ¡fico (remove vagas internacionais)
+        # Filtro geográfico (remove vagas internacionais)
         filtradas_geo = 0
         if novas:
             await db["coleta_status"].update_one(
                 {"_id": "status"},
                 {
                     "$set": {
-                        "mensagem": "Aplicando filtros geogrÃ¡ficos...",
+                        "mensagem": "Aplicando filtros geográficos...",
                         "progresso": 92,
-                        "coletor_atual": "GeolocalizaÃ§Ã£o",
+                        "coletor_atual": "Geolocalização",
                         "atualizado_em": datetime.utcnow(),
                     }
                 },
@@ -337,7 +337,7 @@ async def executar_coleta(termos: list[str]):
             for vaga in novas:
                 vaga.termo_busca = termos_str
 
-        # Extrair UF da localizaÃ§Ã£o
+        # Extrair UF da localização
         if novas:
             await db["coleta_status"].update_one(
                 {"_id": "status"},
@@ -345,7 +345,7 @@ async def executar_coleta(termos: list[str]):
                     "$set": {
                         "mensagem": "Extraindo estados (UF)...",
                         "progresso": 94,
-                        "coletor_atual": "LocalizaÃ§Ã£o",
+                        "coletor_atual": "Localização",
                         "atualizado_em": datetime.utcnow(),
                     }
                 },
@@ -368,7 +368,7 @@ async def executar_coleta(termos: list[str]):
         )
         inseridas = await dedup.inserir_lote(novas)
 
-        # Scoring e anÃ¡lise
+        # Scoring e análise
         vagas_com_score: list[dict] = []
         if novas:
             await db["coleta_status"].update_one(
@@ -445,7 +445,7 @@ async def executar_coleta(termos: list[str]):
                     "coletor_atual": "",
                     "atualizado_em": datetime.utcnow(),
                 },
-                "$push": {"detalhes": f"âŒ Ocorreu um erro geral: {str(e)}"},
+                "$push": {"detalhes": f"❌ Ocorreu um erro geral: {str(e)}"},
             },
         )
 

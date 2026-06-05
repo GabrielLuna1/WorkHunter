@@ -9,13 +9,13 @@ class ExperienciaProfissional(BaseModel):
     data_inicio: Optional[str] = None  # Ex: "Mar 2023"
     data_fim: Optional[str] = None  # Ex: "Atual" ou "Dez 2022"
     descricao: list[str] = []  # Lista de bullets de responsabilidade
-    tecnologias: list[str] = []  # Tecnologias usadas nessa experiÃªncia
+    tecnologias: list[str] = []  # Tecnologias usadas nessa experiência
 
 
 class Projeto(BaseModel):
     nome: str
     descricao: Optional[str] = None
-    bullets: list[str] = []  # RealizaÃ§Ãµes e detalhes tÃ©cnicos
+    bullets: list[str] = []  # Realizações e detalhes técnicos
     tecnologias: list[str] = []
     url: Optional[str] = None
 
@@ -23,7 +23,7 @@ class Projeto(BaseModel):
 class Formacao(BaseModel):
     instituicao: str
     curso: str
-    nivel: Optional[str] = None  # Ex: "TecnÃ³logo", "Bacharelado", "MBA"
+    nivel: Optional[str] = None  # Ex: "Tecnólogo", "Bacharelado", "MBA"
     data_conclusao: Optional[str] = None  # Ex: "Dez 2020"
     em_andamento: bool = False
 
@@ -37,7 +37,7 @@ class Certificacao(BaseModel):
 
 class Idioma(BaseModel):
     idioma: str
-    nivel: str  # Ex: "Nativo", "IntermediÃ¡rio", "AvanÃ§ado"
+    nivel: str  # Ex: "Nativo", "Intermediário", "Avançado"
 
 
 class SecaoGenerica(BaseModel):
@@ -64,12 +64,12 @@ class CurriculoSchema(BaseModel):
     skills: list[str] = []
     secoes_personalizadas: list[SecaoGenerica] = []
 
-    # Parsing metadata â€” preservaÃ§Ã£o e transparÃªncia
-    texto_bruto: Optional[str] = None  # Texto extraÃ­do original, NUNCA modificado
+    # Parsing metadata — preservação e transparência
+    texto_bruto: Optional[str] = None  # Texto extraído original, NUNCA modificado
     idioma_detectado: Optional[str] = None  # "pt" | "en" | "es"
-    parsing_confidence: Optional[float] = None  # 0.0-1.0 mÃ©dia geral
+    parsing_confidence: Optional[float] = None  # 0.0-1.0 média geral
     parsing_warnings: list[str] = []  # Alertas do parser
-    total_secoes_detectadas: int = 0  # Quantidade de seÃ§Ãµes identificadas
+    total_secoes_detectadas: int = 0  # Quantidade de seções identificadas
 
     versao: int = 1
     nome_versao: Optional[str] = None

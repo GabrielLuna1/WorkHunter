@@ -74,7 +74,7 @@ async def _save_versao(
     await db["curriculo_versoes"].insert_one(doc)
 
 
-# â”€â”€â”€ Tool Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Tool Handlers ────────────────────────────────────────────
 
 
 async def handle_analyze_vaga(
@@ -82,7 +82,7 @@ async def handle_analyze_vaga(
 ) -> dict:
     vaga = await db["vagas"].find_one({"_id": ObjectId(vaga_id)})
     if not vaga:
-        return {"success": False, "error": "Vaga nÃ£o encontrada"}
+        return {"success": False, "error": "Vaga não encontrada"}
 
     result = await ai_client.analisar_vaga(
         titulo=vaga.get("titulo", ""),
@@ -94,11 +94,11 @@ async def handle_analyze_vaga(
     if not result:
         return {
             "success": False,
-            "error": "NÃ£o foi possÃ­vel analisar a vaga no momento",
+            "error": "Não foi possível analisar a vaga no momento",
         }
 
-    stacks = ", ".join(result.get("stack_principal", [])) or "nÃ£o identificada"
-    nivel = result.get("nivel", result.get("senioridade_detectada", "nÃ£o identificado"))
+    stacks = ", ".join(result.get("stack_principal", [])) or "não identificada"
+    nivel = result.get("nivel", result.get("senioridade_detectada", "não identificado"))
     resumo = result.get("resumo", "")
     obg = result.get("requisitos_obrigatorios", [])
     des = result.get("requisitos_desejaveis", [])
@@ -134,21 +134,21 @@ async def handle_analyze_vaga(
     )
 
     lines = [
-        f"## AnÃ¡lise: {vaga.get('titulo', '')}",
+        f"## Análise: {vaga.get('titulo', '')}",
         f"**Empresa:** {vaga.get('empresa', '')}",
         f"**Stack principal:** {stacks}",
-        f"**NÃ­vel:** {nivel}",
+        f"**Nível:** {nivel}",
     ]
     if sal_min or sal_max:
-        lines.append(f"**SalÃ¡rio estimado:** R$ {sal_min or '?'} - R$ {sal_max or '?'}")
+        lines.append(f"**Salário estimado:** R$ {sal_min or '?'} - R$ {sal_max or '?'}")
     if resumo:
         lines.append(f"\n**Resumo:**\n{resumo}")
     if obg:
         items = "\n".join(f"- {r.get('descricao', r)}" for r in obg[:8])
-        lines.append(f"\n**Requisitos obrigatÃ³rios:**\n{items}")
+        lines.append(f"\n**Requisitos obrigatórios:**\n{items}")
     if des:
         items = "\n".join(f"- {r.get('descricao', r)}" for r in des[:6])
-        lines.append(f"\n**DesejÃ¡veis:**\n{items}")
+        lines.append(f"\n**Desejáveis:**\n{items}")
     if soft:
         items = ", ".join(soft)
         lines.append(f"\n**Soft skills:** {items}")
@@ -157,7 +157,7 @@ async def handle_analyze_vaga(
         lines.append(f"\n**Palavras-chave ATS:** {items}")
 
     lines.append(
-        f"\n---\n*AnÃ¡lise salva em {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}*"
+        f"\n---\n*Análise salva em {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}*"
     )
 
     return {"success": True, "result": "\n".join(lines), "raw": result}
@@ -168,7 +168,7 @@ async def handle_calcular_match(
 ) -> dict:
     vaga = await db["vagas"].find_one({"_id": ObjectId(vaga_id)})
     if not vaga:
-        return {"success": False, "error": "Vaga nÃ£o encontrada"}
+        return {"success": False, "error": "Vaga não encontrada"}
 
     curriculo = await db["curriculo_versoes"].find_one(
         {"user_id": user_id, "ativo": True}, sort=[("versao", -1)]
@@ -176,19 +176,19 @@ async def handle_calcular_match(
     if not curriculo:
         return {
             "success": False,
-            "error": "Nenhum currÃ­culo ativo encontrado. FaÃ§a upload em /curriculo primeiro.",
+            "error": "Nenhum currículo ativo encontrado. Faça upload em /curriculo primeiro.",
         }
 
     estruturado = curriculo.get("estruturado") or curriculo
 
-    # Extrair skills (correÃ§Ã£o: curriculos usa 'skills', nÃ£o 'stacks_atuais')
+    # Extrair skills (correção: curriculos usa 'skills', não 'stacks_atuais')
     skills_raw = estruturado.get("skills") or []
     skills = [{"nome": s, "nivel": ""} for s in skills_raw if isinstance(s, str)]
 
     experiencias = estruturado.get("experiencias", [])
     projetos = estruturado.get("projetos", [])
 
-    # Calcula score algoritmico para unificar as mÃ©tricas
+    # Calcula score algoritmico para unificar as métricas
     from services.scoring_service import ScoringService
     from models.vaga import VagaBruta
 
@@ -220,7 +220,7 @@ async def handle_calcular_match(
     if not result:
         return {
             "success": False,
-            "error": "NÃ£o foi possÃ­vel calcular o match no momento",
+            "error": "Não foi possível calcular o match no momento",
         }
 
     score = result.get("score_geral", 50)
@@ -249,13 +249,13 @@ async def handle_calcular_match(
         result,
     )
 
-    emoji_chance = {"alta": "ðŸŸ¢", "media": "ðŸŸ¡", "baixa": "ðŸ”´"}.get(chance, "âšª")
+    emoji_chance = {"alta": "ðŸŸ¢", "media": "ðŸŸ¡", "baixa": "ðŸ”´"}.get(chance, "⚪")
 
     lines = [
-        f"## Match: {vaga.get('titulo', '')} â€” {vaga.get('empresa', '')}",
+        f"## Match: {vaga.get('titulo', '')} — {vaga.get('empresa', '')}",
         f"\n### Score Geral: **{score}/100** {emoji_chance}",
-        f"- TÃ©cnico: {score_tec}/100",
-        f"- ExperiÃªncia: {score_exp}/100",
+        f"- Técnico: {score_tec}/100",
+        f"- Experiência: {score_exp}/100",
         f"- Soft Skills: {score_soft}/100",
         f"- Chance de entrevista: **{chance.upper()}**",
     ]
@@ -264,10 +264,10 @@ async def handle_calcular_match(
         lines.append(f"\n**Skills em falta:**\n{items}")
     if skills_match:
         items = "\n".join(
-            f"- {s.get('skill', s)} (vaga: {s.get('nivel_vaga', '')} | vocÃª: {s.get('nivel_usuario', '')})"
+            f"- {s.get('skill', s)} (vaga: {s.get('nivel_vaga', '')} | você: {s.get('nivel_usuario', '')})"
             for s in skills_match[:6]
         )
-        lines.append(f"\n**Skills compatÃ­veis:**\n{items}")
+        lines.append(f"\n**Skills compatíveis:**\n{items}")
     if gaps:
         items = "\n".join(
             f"- {g.get('descricao', g)} (impacto: {g.get('impacto', 'medio')})"
@@ -290,7 +290,7 @@ async def handle_pipeline_status(
     if pipeline_items == 0:
         return {
             "success": True,
-            "result": "VocÃª ainda nÃ£o tem nenhuma candidatura no pipeline. Navegue pelas vagas e candidate-se para comeÃ§ar.",
+            "result": "Você ainda não tem nenhuma candidatura no pipeline. Navegue pelas vagas e candidate-se para começar.",
         }
 
     stages = [
@@ -320,22 +320,22 @@ async def handle_pipeline_status(
 
     lines = [
         f"## Pipeline de Candidaturas",
-        f"\n**Total:** {pipeline_items} vagas | **Candidatadas:** {candidatadas} | **Taxa de avanÃ§o:** {taxa}%",
+        f"\n**Total:** {pipeline_items} vagas | **Candidatadas:** {candidatadas} | **Taxa de avanço:** {taxa}%",
     ]
     stage_names = {
         "salva": "ðŸ“Œ Salvas",
         "aplicada": "ðŸ“¨ Aplicadas",
-        "em_analise": "ðŸ” Em AnÃ¡lise",
+        "em_analise": "ðŸ” Em Análise",
         "entrevista_rh": "ðŸ“ž Entrevista RH",
-        "entrevista_tecnica": "ðŸ’» Entrevista TÃ©cnica",
-        "teste_tecnico": "ðŸ§ª Teste TÃ©cnico",
-        "contratado": "âœ… Contratado",
-        "rejeitado": "âŒ Rejeitado",
+        "entrevista_tecnica": "ðŸ’» Entrevista Técnica",
+        "teste_tecnico": "ðŸ§ª Teste Técnico",
+        "contratado": "✅ Contratado",
+        "rejeitado": "❌ Rejeitado",
     }
     for stage in stages:
         c = counts.get(stage, 0)
         icon = stage_names.get(stage, stage)
-        bar = "â–¬" * min(c, 20) if c > 0 else ""
+        bar = "▬" * min(c, 20) if c > 0 else ""
         lines.append(f"\n{icon}: {c} {bar}")
 
     lines.append(
@@ -349,12 +349,12 @@ async def handle_analisar_vaga(
     user_id: str, vaga_id: str, db: AsyncIOMotorDatabase
 ) -> dict:
     """
-    Analisa compatibilidade currÃ­culo vs vaga.
-    NÃƒO modifica o currÃ­culo â€” apenas retorna insights.
+    Analisa compatibilidade currículo vs vaga.
+    NÃO modifica o currículo — apenas retorna insights.
     """
     vaga = await db["vagas"].find_one({"_id": ObjectId(vaga_id)})
     if not vaga:
-        return {"success": False, "error": "Vaga nÃ£o encontrada"}
+        return {"success": False, "error": "Vaga não encontrada"}
 
     curriculo_doc = await db["curriculo_versoes"].find_one(
         {"user_id": user_id, "ativo": True}, sort=[("versao", -1)]
@@ -362,7 +362,7 @@ async def handle_analisar_vaga(
     if not curriculo_doc:
         return {
             "success": False,
-            "error": "Nenhum currÃ­culo encontrado. FaÃ§a upload primeiro.",
+            "error": "Nenhum currículo encontrado. Faça upload primeiro.",
         }
 
     from services.resume_analyzer import analisar_match
@@ -371,28 +371,28 @@ async def handle_analisar_vaga(
     if not resultado:
         return {
             "success": False,
-            "error": "NÃ£o foi possÃ­vel analisar o match no momento.",
+            "error": "Não foi possível analisar o match no momento.",
         }
 
     lines = [
-        f"## AnÃ¡lise de Match â€” {vaga.get('titulo', '')} na {vaga.get('empresa', '')}",
+        f"## Análise de Match — {vaga.get('titulo', '')} na {vaga.get('empresa', '')}",
         f"\n**Compatibilidade:** {resultado.get('compatibilidade_geral', '?')}",
         f"**Score estimado:** {resultado.get('score_estimado', '?')}/100",
     ]
 
     pontos_fortes = resultado.get("pontos_fortes", [])
     if pontos_fortes:
-        lines.append("\n**âœ… Pontos Fortes:**")
+        lines.append("\n**✅ Pontos Fortes:**")
         for p in pontos_fortes:
             lines.append(f"- {p}")
 
     skills_presentes = resultado.get("skills_presentes", [])
     if skills_presentes:
-        lines.append(f"\n**ðŸ“‹ Skills compatÃ­veis:** {', '.join(skills_presentes)}")
+        lines.append(f"\n**ðŸ“‹ Skills compatíveis:** {', '.join(skills_presentes)}")
 
     pontos_fracos = resultado.get("pontos_fracos", [])
     if pontos_fracos:
-        lines.append("\n**âš ï¸ Pontos Fracos / Gaps:**")
+        lines.append("\n**⚠️ Pontos Fracos / Gaps:**")
         for p in pontos_fracos:
             lines.append(f"- {p}")
 
@@ -402,7 +402,7 @@ async def handle_analisar_vaga(
 
     sugestoes = resultado.get("sugestoes", [])
     if sugestoes:
-        lines.append("\n**ðŸ’¡ SugestÃµes de melhoria:**")
+        lines.append("\n**ðŸ’¡ Sugestões de melhoria:**")
         for s in sugestoes:
             lines.append(f"- {s}")
 
@@ -418,13 +418,13 @@ async def handle_gerar_cover_letter(
 ) -> dict:
     vaga = await db["vagas"].find_one({"_id": ObjectId(vaga_id)})
     if not vaga:
-        return {"success": False, "error": "Vaga nÃ£o encontrada"}
+        return {"success": False, "error": "Vaga não encontrada"}
 
     curriculo = await db["curriculo_versoes"].find_one(
         {"user_id": user_id, "ativo": True}, sort=[("versao", -1)]
     )
     if not curriculo:
-        return {"success": False, "error": "Nenhum currÃ­culo ativo encontrado."}
+        return {"success": False, "error": "Nenhum currículo ativo encontrado."}
 
     estruturado = curriculo.get("estruturado") or curriculo
     skills_raw = estruturado.get("skills") or []
@@ -443,14 +443,14 @@ async def handle_gerar_cover_letter(
     if not result:
         return {
             "success": False,
-            "error": "NÃ£o foi possÃ­vel gerar a cover letter no momento",
+            "error": "Não foi possível gerar a cover letter no momento",
         }
 
     assunto = result.get("assunto", "Candidatura")
     corpo = result.get("corpo", "")
 
     lines = [
-        f"## Cover Letter â€” {vaga.get('titulo', '')} na {vaga.get('empresa', '')}",
+        f"## Cover Letter — {vaga.get('titulo', '')} na {vaga.get('empresa', '')}",
         f"\n**Assunto:** {assunto}",
         f"\n{corpo}",
         f"\n---\n*Gerado por IA em {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}*",
@@ -624,8 +624,8 @@ async def handle_buscar_vagas(
         "entrevista_rh": "ðŸ“ž",
         "entrevista_tecnica": "ðŸ’»",
         "teste_tecnico": "ðŸ§ª",
-        "contratado": "âœ…",
-        "rejeitado": "âŒ",
+        "contratado": "✅",
+        "rejeitado": "❌",
     }
 
     lines = [f"## Resultados da Busca ({len(vagas_encontradas)} vagas)", ""]

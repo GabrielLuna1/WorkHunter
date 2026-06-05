@@ -38,7 +38,7 @@ def _doc_to_dict(doc: dict) -> dict:
     return doc
 
 
-# â”€â”€â”€ Sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Sessions ─────────────────────────────────────────────────
 
 
 @router.post("/chat/sessions")
@@ -68,7 +68,7 @@ async def deletar_sessao(sessao_id: str, user_id: str = Depends(get_user_id)):
     coll = _sessoes()
     result = await coll.delete_one({"_id": ObjectId(sessao_id), "user_id": user_id})
     if not result.deleted_count:
-        raise HTTPException(404, "SessÃ£o nÃ£o encontrada")
+        raise HTTPException(404, "Sessão não encontrada")
     await _mensagens().delete_many({"sessao_id": sessao_id})
 
 
@@ -84,12 +84,12 @@ async def atualizar_sessao(
         {"$set": {"titulo": body.titulo, "updated_at": datetime.utcnow()}},
     )
     if not result:
-        raise HTTPException(404, "SessÃ£o nÃ£o encontrada")
+        raise HTTPException(404, "Sessão não encontrada")
     result["titulo"] = body.titulo
     return _doc_to_dict(result)
 
 
-# â”€â”€â”€ Messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Messages ─────────────────────────────────────────────────
 
 
 @router.get("/chat/sessions/{sessao_id}/messages")
@@ -97,13 +97,13 @@ async def listar_mensagens(sessao_id: str, user_id: str = Depends(get_user_id)):
     coll = _sessoes()
     sessao = await coll.find_one({"_id": ObjectId(sessao_id), "user_id": user_id})
     if not sessao:
-        raise HTTPException(404, "SessÃ£o nÃ£o encontrada")
+        raise HTTPException(404, "Sessão não encontrada")
     msg_coll = _mensagens()
     cursor = msg_coll.find({"sessao_id": sessao_id}).sort("created_at", 1)
     return [_doc_to_dict(d) async for d in cursor]
 
 
-# â”€â”€â”€ Send / Stream â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Send / Stream ────────────────────────────────────────────
 
 
 @router.post("/chat/sessions/{sessao_id}/send")
@@ -113,7 +113,7 @@ async def enviar_mensagem(
     coll = _sessoes()
     sessao = await coll.find_one({"_id": ObjectId(sessao_id), "user_id": user_id})
     if not sessao:
-        raise HTTPException(404, "SessÃ£o nÃ£o encontrada")
+        raise HTTPException(404, "Sessão não encontrada")
 
     msg_coll = _mensagens()
     now = datetime.utcnow()
@@ -203,7 +203,7 @@ async def enviar_mensagem(
             else:
                 tool_result = {
                     "success": False,
-                    "error": f"Ferramenta '{tool['tool']}' nÃ£o encontrada",
+                    "error": f"Ferramenta '{tool['tool']}' não encontrada",
                 }
 
             yield {"event": "tool_result", "data": json.dumps(tool_result)}
@@ -225,7 +225,7 @@ async def enviar_mensagem(
     return EventSourceResponse(event_generator())
 
 
-# â”€â”€â”€ Enriched Context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Enriched Context ─────────────────────────────────────────
 
 
 async def _build_enriched_context(user_id: str, vaga_id: Optional[str] = None) -> dict:
@@ -285,7 +285,7 @@ async def _build_enriched_context(user_id: str, vaga_id: Optional[str] = None) -
         skills_raw = estruturado.get("skills") or []
         skills = [s for s in skills_raw if isinstance(s, str)]
 
-        # Resumo das Ãºltimas 3 experiÃªncias
+        # Resumo das últimas 3 experiências
         exp_list = estruturado.get("experiencias") or []
         resumo_exp = []
         for e in exp_list[:3]:
@@ -295,13 +295,13 @@ async def _build_enriched_context(user_id: str, vaga_id: Optional[str] = None) -
             if e.get("data_inicio"):
                 periodo += e.get("data_inicio")
                 if e.get("data_fim"):
-                    periodo += f" atÃ© {e.get('data_fim')}"
+                    periodo += f" até {e.get('data_fim')}"
 
             resumo_exp.append(
                 f"{cargo} na {empresa}" + (f" ({periodo})" if periodo else "")
             )
 
-        # Raw text fallback â€” quando parser nÃ£o classifica bem, LLM lÃª diretamente
+        # Raw text fallback — quando parser não classifica bem, LLM lê diretamente
         raw = estruturado.get("texto_bruto") or ""
         if raw:
             raw = raw[:8000]
@@ -319,7 +319,7 @@ async def _build_enriched_context(user_id: str, vaga_id: Optional[str] = None) -
     else:
         context["curriculo"] = {"existe": False}
 
-    # Perfil profissional extraÃ­do do currÃ­culo
+    # Perfil profissional extraído do currículo
     profile = await db["profiles"].find_one({"user_id": user_id})
     if profile:
         context["profile"] = {
@@ -349,15 +349,15 @@ async def _build_enriched_context(user_id: str, vaga_id: Optional[str] = None) -
     return context
 
 
-# â”€â”€â”€ System Prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── System Prompt ────────────────────────────────────────────
 
 
 def _build_system_prompt(user_id: str, context: dict) -> str:
-    ctx_lines = ["## Contexto do UsuÃ¡rio"]
+    ctx_lines = ["## Contexto do Usuário"]
 
     vagas = context.get("vagas_recentes", [])
     if vagas:
-        ctx_lines.append("\n**Ãšltimas vagas:**")
+        ctx_lines.append("\n**Últimas vagas:**")
         for v in vagas:
             ctx_lines.append(
                 f"- [{v['id']}] {v['titulo']} @ {v['empresa']} (score: {v['score']})"
@@ -365,11 +365,11 @@ def _build_system_prompt(user_id: str, context: dict) -> str:
 
     profile = context.get("profile")
     if profile and profile.get("existe"):
-        stack_str = ", ".join(profile.get("stack_principal", [])) or "nÃ£o informada"
-        senioridade = profile.get("senioridade", "") or "nÃ£o detectada"
+        stack_str = ", ".join(profile.get("stack_principal", [])) or "não informada"
+        senioridade = profile.get("senioridade", "") or "não detectada"
         ctx_lines.append(
-            f"\n**Perfil Profissional:** {profile.get('nome', 'UsuÃ¡rio')} "
-            f"â€” {profile.get('titulo_profissional', '')}"
+            f"\n**Perfil Profissional:** {profile.get('nome', 'Usuário')} "
+            f"— {profile.get('titulo_profissional', '')}"
             f"\n**Senioridade:** {senioridade} | **Anos de exp:** {profile.get('anos_experiencia', 0)}"
             f"\n**Stack principal:** {stack_str}"
         )
@@ -402,13 +402,13 @@ def _build_system_prompt(user_id: str, context: dict) -> str:
 
     curriculo = context.get("curriculo", {})
     if curriculo.get("existe"):
-        stacks = ", ".join(curriculo.get("stacks", [])) or "nÃ£o informadas"
+        stacks = ", ".join(curriculo.get("stacks", [])) or "não informadas"
         exp_resumo = (
-            curriculo.get("experiencias_resumo") or "nenhuma experiÃªncia detalhada"
+            curriculo.get("experiencias_resumo") or "nenhuma experiência detalhada"
         )
         ctx_lines.append(
-            f"\n**CurrÃ­culo Ativo ({curriculo.get('versao', '')}):** {curriculo.get('nome', 'UsuÃ¡rio')} â€” stacks: {stacks}\n"
-            f"**ExperiÃªncia ({curriculo.get('experiencias_count', 0)} total):** {exp_resumo}\n"
+            f"\n**Currículo Ativo ({curriculo.get('versao', '')}):** {curriculo.get('nome', 'Usuário')} — stacks: {stacks}\n"
+            f"**Experiência ({curriculo.get('experiencias_count', 0)} total):** {exp_resumo}\n"
             f"**Projetos:** {curriculo.get('projetos_count', 0)} projetos catalogados"
         )
 
@@ -418,10 +418,10 @@ def _build_system_prompt(user_id: str, context: dict) -> str:
             or curriculo.get("projetos_count", 0) == 0
         ):
             ctx_lines.append(
-                f"\n**Texto completo do currÃ­culo (fallback):**\n{raw[:5000]}"
+                f"\n**Texto completo do currículo (fallback):**\n{raw[:5000]}"
             )
     else:
-        ctx_lines.append("\n**CurrÃ­culo:** nenhum (usuÃ¡rio ainda nÃ£o fez upload)")
+        ctx_lines.append("\n**Currículo:** nenhum (usuário ainda não fez upload)")
 
     pipe = context.get("pipeline_stats", {})
     pipe_total = context.get("pipeline_total", 0)
@@ -455,59 +455,59 @@ def _build_system_prompt(user_id: str, context: dict) -> str:
 
     context_str = "\n".join(ctx_lines)
 
-    return f"""VocÃª Ã© o WorkPlus Copilot, assistente inteligente de carreira.
+    return f"""Você é o WorkPlus Copilot, assistente inteligente de carreira.
 
-VocÃª ajuda o usuÃ¡rio a otimizar candidaturas, analisar vagas, melhorar currÃ­culos e gerenciar o pipeline de forma estratÃ©gica.
+Você ajuda o usuário a otimizar candidaturas, analisar vagas, melhorar currículos e gerenciar o pipeline de forma estratégica.
 
 {context_str}
 
-## Regras ObrigatÃ³rias (nÃ£o ignore)
+## Regras Obrigatórias (não ignore)
 
-### Anti-alucinaÃ§Ã£o
-- NUNCA invente skills, experiÃªncias, vagas, empresas, URLs, nÃºmeros ou dados que nÃ£o estejam no contexto fornecido acima ou no histÃ³rico.
-- SE NÃƒO SOUBER a resposta, diga "NÃ£o tenho essa informaÃ§Ã£o no meu contexto atual" â€” nÃ£o tente adivinhar.
-- SE NÃƒO TIVER dados suficientes para uma anÃ¡lise, peÃ§a mais informaÃ§Ãµes ao usuÃ¡rio.
-- NUNCA simule resultados de ferramentas que nÃ£o foram executadas â€” espere o resultado real da ferramenta.
-- NUNCA gere links, URLs ou referÃªncias a vagas que nÃ£o existem no banco de dados.
+### Anti-alucinação
+- NUNCA invente skills, experiências, vagas, empresas, URLs, números ou dados que não estejam no contexto fornecido acima ou no histórico.
+- SE NÃO SOUBER a resposta, diga "Não tenho essa informação no meu contexto atual" — não tente adivinhar.
+- SE NÃO TIVER dados suficientes para uma análise, peça mais informações ao usuário.
+- NUNCA simule resultados de ferramentas que não foram executadas — espere o resultado real da ferramenta.
+- NUNCA gere links, URLs ou referências a vagas que não existem no banco de dados.
 
  ### Comportamento
-- Seja direto, prÃ¡tico e profissional. Responda sempre em portuguÃªs.
-- Use APENAS o contexto acima e o histÃ³rico da conversa para responder â€” nÃ£o use conhecimento externo nÃ£o verificado.
-- Seja proativo: sugira anÃ¡lises, otimizaÃ§Ãµes e aÃ§Ãµes estratÃ©gicas, mas apenas quando tiver dados reais para basear a sugestÃ£o.
-- **NUNCA chame ferramentas sem o usuÃ¡rio pedir explicitamente.** Responda primeiro, depois pergunte se quer que execute algo.
+- Seja direto, prático e profissional. Responda sempre em português.
+- Use APENAS o contexto acima e o histórico da conversa para responder — não use conhecimento externo não verificado.
+- Seja proativo: sugira análises, otimizações e ações estratégicas, mas apenas quando tiver dados reais para basear a sugestão.
+- **NUNCA chame ferramentas sem o usuário pedir explicitamente.** Responda primeiro, depois pergunte se quer que execute algo.
 
-### Uso de Ferramentas â€” Regra de Ouro
-- **NUNCA inclua [TOOL:...] na sua resposta a menos que o usuÃ¡rio tenha acabado de pedir explicitamente aquela aÃ§Ã£o.**
-- Se o usuÃ¡rio pedir anÃ¡lise de currÃ­culo, perfil, skills, ou informaÃ§Ãµes: **responda usando apenas o contexto**. Depois pergunte se quer que faÃ§a algo com esses dados.
-- Exemplo correto: "Suas skills principais sÃ£o React, TypeScript, Next.js. Quer que eu busque vagas compatÃ­veis?"
-- Exemplo correto se o usuÃ¡rio responder "sim": "Claro! [TOOL:buscar_vagas|React TypeScript Next.js]"
-- Exemplo ERRADO (nÃ£o faÃ§a isso): responder com o tool marker sem o usuÃ¡rio ter confirmado.
+### Uso de Ferramentas — Regra de Ouro
+- **NUNCA inclua [TOOL:...] na sua resposta a menos que o usuário tenha acabado de pedir explicitamente aquela ação.**
+- Se o usuário pedir análise de currículo, perfil, skills, ou informações: **responda usando apenas o contexto**. Depois pergunte se quer que faça algo com esses dados.
+- Exemplo correto: "Suas skills principais são React, TypeScript, Next.js. Quer que eu busque vagas compatíveis?"
+- Exemplo correto se o usuário responder "sim": "Claro! [TOOL:buscar_vagas|React TypeScript Next.js]"
+- Exemplo ERRADO (não faça isso): responder com o tool marker sem o usuário ter confirmado.
 
 ### Formato de resposta
-- Respostas curtas e objetivas. ParÃ¡grafos de no mÃ¡ximo 3 frases.
-- Use listas apenas quando comparar mÃºltiplos itens (ex: skills, vagas).
-- NUNCA use markdown alÃ©m de negrito (**) para Ãªnfase.
+- Respostas curtas e objetivas. Parágrafos de no máximo 3 frases.
+- Use listas apenas quando comparar múltiplos itens (ex: skills, vagas).
+- NUNCA use markdown além de negrito (**) para ênfase.
 - NUNCA use emojis.
 
-## Ferramentas disponÃ­veis
-Inclua o marcador APENAS quando o usuÃ¡rio confirmar explicitamente que quer a aÃ§Ã£o:
+## Ferramentas disponíveis
+Inclua o marcador APENAS quando o usuário confirmar explicitamente que quer a ação:
 
-- **analyze_vaga|vaga_id** â€” AnÃ¡lise profunda de uma vaga especÃ­fica (requisitos, senioridade, ATS, etc.)
-- **calcular_match|vaga_id** â€” Calcula compatibilidade entre vaga e currÃ­culo do usuÃ¡rio
-- **analisar_match|vaga_id** â€” Analisa currÃ­culo vs vaga: destaca skills presentes/faltando, gaps, pontos fortes/fracos e sugestÃµes de melhoria (NÃƒO modifica o currÃ­culo)
-- **pipeline_status** â€” Mostra status completo do pipeline de candidaturas
-- **buscar_vagas|termo** â€” Busca vagas na base consolidada. params pode ser texto simples (ex: "React remoto SP") ou JSON (ex: {{"busca": "React", "localizacao": "remoto"}}). Retorna atÃ© 15 vagas ranqueadas por score.
-- **gerar_cover_letter|vaga_id** â€” Gera uma cover letter personalizada para a vaga
+- **analyze_vaga|vaga_id** — Análise profunda de uma vaga específica (requisitos, senioridade, ATS, etc.)
+- **calcular_match|vaga_id** — Calcula compatibilidade entre vaga e currículo do usuário
+- **analisar_match|vaga_id** — Analisa currículo vs vaga: destaca skills presentes/faltando, gaps, pontos fortes/fracos e sugestões de melhoria (NÃO modifica o currículo)
+- **pipeline_status** — Mostra status completo do pipeline de candidaturas
+- **buscar_vagas|termo** — Busca vagas na base consolidada. params pode ser texto simples (ex: "React remoto SP") ou JSON (ex: {{"busca": "React", "localizacao": "remoto"}}). Retorna até 15 vagas ranqueadas por score.
+- **gerar_cover_letter|vaga_id** — Gera uma cover letter personalizada para a vaga
 
-## Encadeamento de aÃ§Ãµes
-APÃ“S executar uma ferramenta, SEMPRE sugira o prÃ³ximo passo relevante:
-- ApÃ³s **analyze_vaga**: "Quer calcular o fit dessa vaga com seu perfil? [TOOL:calcular_match|vaga_id]"
-- ApÃ³s **calcular_match**: "Quer uma anÃ¡lise detalhada do match? [TOOL:analisar_match|vaga_id]" ou "Posso gerar uma cover letter. [TOOL:gerar_cover_letter|vaga_id]"
-- ApÃ³s **analisar_match**: "Quer que eu crie uma cover letter para acompanhar? [TOOL:gerar_cover_letter|vaga_id]"
-- ApÃ³s **pipeline_status**: "Quer analisar alguma vaga especÃ­fica do pipeline?"
-- ApÃ³s **buscar_vagas**: "Qual das vagas acima te interessa? Posso analisar em detalhes ou calcular o match."
+## Encadeamento de ações
+APÓS executar uma ferramenta, SEMPRE sugira o próximo passo relevante:
+- Após **analyze_vaga**: "Quer calcular o fit dessa vaga com seu perfil? [TOOL:calcular_match|vaga_id]"
+- Após **calcular_match**: "Quer uma análise detalhada do match? [TOOL:analisar_match|vaga_id]" ou "Posso gerar uma cover letter. [TOOL:gerar_cover_letter|vaga_id]"
+- Após **analisar_match**: "Quer que eu crie uma cover letter para acompanhar? [TOOL:gerar_cover_letter|vaga_id]"
+- Após **pipeline_status**: "Quer analisar alguma vaga específica do pipeline?"
+- Após **buscar_vagas**: "Qual das vagas acima te interessa? Posso analisar em detalhes ou calcular o match."
 
-UsuÃ¡rio ID: {user_id}"""
+Usuário ID: {user_id}"""
 
 
 def _detect_tool_call(text: str) -> Optional[dict]:

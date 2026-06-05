@@ -1,15 +1,15 @@
 ﻿"""
-Teste de validaÃ§Ã£o da LLM local para operaÃ§Ãµes de currÃ­culo.
+Teste de validação da LLM local para operações de currículo.
 
 Uso:
     python -m tests.test_llm_curriculo
 
-Testa 3 cenÃ¡rios:
-  1. Parse de currÃ­culo (estruturar texto bruto em JSON)
-  2. OtimizaÃ§Ã£o para vaga alvo (reformular sem alucinaÃ§Ãµes)
-  3. GeraÃ§Ã£o de cover letter
+Testa 3 cenários:
+  1. Parse de currículo (estruturar texto bruto em JSON)
+  2. Otimização para vaga alvo (reformular sem alucinações)
+  3. Geração de cover letter
 
-SaÃ­da: RelatÃ³rio salvo em logs/test_llm_curriculo_{timestamp}.md
+Saída: Relatório salvo em logs/test_llm_curriculo_{timestamp}.md
 """
 
 import asyncio
@@ -28,56 +28,56 @@ import httpx
 
 
 CURRICULO_EXEMPLO = """
-JoÃ£o Silva
+João Silva
 joao.silva@email.com
 (11) 98765-4321
-SÃ£o Paulo, SP
+São Paulo, SP
 
 Resumo Profissional:
-Desenvolvedor Full Stack com 5 anos de experiÃªncia em Python, JavaScript e React.
-AtuaÃ§Ã£o em projetos de alto trÃ¡fego com foco em performance e escalabilidade.
+Desenvolvedor Full Stack com 5 anos de experiência em Python, JavaScript e React.
+Atuação em projetos de alto tráfego com foco em performance e escalabilidade.
 
-ExperiÃªncia:
+Experiência:
 Tech Solutions Ltda - Desenvolvedor Full Stack (2021-2025)
 - Desenvolvimento de APIs REST com FastAPI e Django
-- ImplementaÃ§Ã£o de testes automatizados (pytest, jest)
-- OtimizaÃ§Ã£o de queries SQL que reduziram tempo de resposta em 40%
+- Implementação de testes automatizados (pytest, jest)
+- Otimização de queries SQL que reduziram tempo de resposta em 40%
 
 Startup ABC Ltda - Desenvolvedor Frontend (2019-2021)
-- CriaÃ§Ã£o de interfaces com React, TypeScript e Tailwind CSS
-- IntegraÃ§Ã£o com APIs de terceiros (Stripe, Google Maps)
-- ParticipaÃ§Ã£o em squads Ã¡geis com Scrum
+- Criação de interfaces com React, TypeScript e Tailwind CSS
+- Integração com APIs de terceiros (Stripe, Google Maps)
+- Participação em squads ágeis com Scrum
 
-FormaÃ§Ã£o:
-Universidade de SÃ£o Paulo - Bacharelado em CiÃªncia da ComputaÃ§Ã£o (2015-2019)
+Formação:
+Universidade de São Paulo - Bacharelado em Ciência da Computação (2015-2019)
 
 Skills:
 Python, JavaScript, TypeScript, React, FastAPI, Django, PostgreSQL, MongoDB, Docker, AWS, pytest
 """
 
 VAGA_EXEMPLO = {
-    "titulo": "Desenvolvedor Python SÃªnior",
+    "titulo": "Desenvolvedor Python Sênior",
     "empresa": "TechCorp",
     "descricao": """
-Buscamos um Desenvolvedor Python SÃªnior para integrar nosso time de plataforma.
+Buscamos um Desenvolvedor Python Sênior para integrar nosso time de plataforma.
 
 Requisitos:
-- 5+ anos de experiÃªncia com Python
-- ExperiÃªncia com FastAPI ou Django
+- 5+ anos de experiência com Python
+- Experiência com FastAPI ou Django
 - Conhecimento em bancos relacionais (PostgreSQL)
 - Docker e AWS
 - Testes automatizados
 
 Diferenciais:
-- ExperiÃªncia com mensageria (RabbitMQ, Kafka)
+- Experiência com mensageria (RabbitMQ, Kafka)
 - Conhecimento em Go
-- ExperiÃªncia com arquitetura de microserviÃ§os
+- Experiência com arquitetura de microserviços
 
 Oferecemos:
-- SalÃ¡rio compatÃ­vel com o mercado
+- Salário compatível com o mercado
 - Home office
-- Vale refeiÃ§Ã£o
-- Plano de saÃºde
+- Vale refeição
+- Plano de saúde
     """.strip(),
 }
 
@@ -90,7 +90,7 @@ def escrever_relatorio(titulo: str, secoes: list[dict]) -> str:
     path = os.path.join(REPORT_DIR, f"test_llm_curriculo_{timestamp}.md")
 
     lines = [
-        f"# Teste LLM â€” {titulo}",
+        f"# Teste LLM — {titulo}",
         f"**Data:** {datetime.utcnow().isoformat()}",
         "",
     ]
@@ -152,13 +152,13 @@ def extrair_json(texto: str) -> Optional[dict]:
 def validar_curriculo_parse(resultado: dict) -> list[str]:
     erros = []
     if not resultado.get("nome"):
-        erros.append("nome nÃ£o extraÃ­do")
+        erros.append("nome não extraído")
     if not resultado.get("stacks_atuais") or len(resultado["stacks_atuais"]) < 3:
-        erros.append("poucas skills extraÃ­das (esperado 3+)")
+        erros.append("poucas skills extraídas (esperado 3+)")
     if not resultado.get("experiencias") or len(resultado["experiencias"]) < 2:
-        erros.append("poucas experiÃªncias extraÃ­das (esperado 2+)")
+        erros.append("poucas experiências extraídas (esperado 2+)")
     if not resultado.get("educacao") or len(resultado["educacao"]) < 1:
-        erros.append("formaÃ§Ã£o nÃ£o extraÃ­da")
+        erros.append("formação não extraída")
     stacks_inventadas = [
         s["nome"].lower()
         for s in resultado.get("stacks_atuais", [])
@@ -172,11 +172,11 @@ def validar_curriculo_parse(resultado: dict) -> list[str]:
     skills_priorizadas = {s.lower() for s in resultado.get("stacks_priorizadas", [])}
     skills_inventadas = skills_priorizadas - perfil_skills
     if skills_inventadas:
-        erros.append(f"skills inventadas na priorizaÃ§Ã£o: {skills_inventadas}")
+        erros.append(f"skills inventadas na priorização: {skills_inventadas}")
 
     resumo = resultado.get("resumo_otimizado", "").lower()
     if "python" in vaga_descricao.lower() and "python" not in resumo:
-        erros.append("resumo nÃ£o menciona skill chave da vaga (Python)")
+        erros.append("resumo não menciona skill chave da vaga (Python)")
 
     if not resultado.get("nota_honestidade"):
         erros.append("nota_honestidade ausente")
@@ -189,19 +189,19 @@ def validar_cover_letter(texto: str, vaga_titulo: str) -> list[str]:
     if not texto or len(texto) < 100:
         erros.append("texto muito curto (< 100 caracteres)")
     if vaga_titulo.lower() not in texto.lower():
-        erros.append("menÃ§Ã£o Ã  vaga ausente na cover letter")
-    palavras_chave = ["experiÃªncia", "oportunidade", "contribuir"]
+        erros.append("menção à vaga ausente na cover letter")
+    palavras_chave = ["experiência", "oportunidade", "contribuir"]
     if not any(p in texto.lower() for p in palavras_chave):
         erros.append(
-            "falta linguagem profissional (experiÃªncia/oportunidade/contribuir)"
+            "falta linguagem profissional (experiência/oportunidade/contribuir)"
         )
     return erros
 
 
 async def test_parse_curriculo() -> dict:
     prompt = (
-        "VocÃª Ã© um parser de currÃ­culos. Analise o texto abaixo e retorne APENAS "
-        "um JSON vÃ¡lido com esta estrutura:\n"
+        "Você é um parser de currículos. Analise o texto abaixo e retorne APENAS "
+        "um JSON válido com esta estrutura:\n"
         '{"nome": string, "email": string, "telefone": string, "cidade": string, '
         '"resumo_profissional": string, '
         '"stacks_atuais": [{"nome": string, "nivel": "iniciante"|"intermediario"|"avancado"}], '
@@ -218,13 +218,13 @@ async def test_parse_curriculo() -> dict:
     duracao = (datetime.utcnow() - inicio).total_seconds()
 
     if not resposta:
-        return {"resultado": "FALHA", "detalhes": "LLM nÃ£o respondeu"}
+        return {"resultado": "FALHA", "detalhes": "LLM não respondeu"}
 
     parsed = extrair_json(resposta)
     if not parsed:
         return {
             "resultado": "FALHA",
-            "detalhes": f"Resposta nÃ£o contÃ©m JSON vÃ¡lido.\n```\n{resposta[:500]}\n```",
+            "detalhes": f"Resposta não contém JSON válido.\n```\n{resposta[:500]}\n```",
         }
 
     erros = validar_curriculo_parse(parsed)
@@ -233,19 +233,19 @@ async def test_parse_curriculo() -> dict:
             "resultado": "FALHA",
             "detalhes": "**Erros encontrados:**\n- "
             + "\n- ".join(erros)
-            + f"\n\n**Tempo:** {duracao:.1f}s\n\n**JSON extraÃ­do:**\n```json\n{json.dumps(parsed, indent=2, ensure_ascii=False)}\n```",
+            + f"\n\n**Tempo:** {duracao:.1f}s\n\n**JSON extraído:**\n```json\n{json.dumps(parsed, indent=2, ensure_ascii=False)}\n```",
         }
 
     return {
         "resultado": "PASSOU",
-        "detalhes": f"Parse OK â€” {len(parsed.get('stacks_atuais', []))} skills, {len(parsed.get('experiencias', []))} experiÃªncias\n**Tempo:** {duracao:.1f}s",
+        "detalhes": f"Parse OK — {len(parsed.get('stacks_atuais', []))} skills, {len(parsed.get('experiencias', []))} experiências\n**Tempo:** {duracao:.1f}s",
     }
 
 
 async def test_analisar_match() -> dict:
     curriculo = {
-        "nome": "JoÃ£o Silva",
-        "resumo_profissional": "Desenvolvedor Full Stack com 5 anos de experiÃªncia em Python, JavaScript e React.",
+        "nome": "João Silva",
+        "resumo_profissional": "Desenvolvedor Full Stack com 5 anos de experiência em Python, JavaScript e React.",
         "skills": [
             "Python",
             "JavaScript",
@@ -262,26 +262,26 @@ async def test_analisar_match() -> dict:
                 "cargo": "Desenvolvedor Full Stack",
                 "descricao": [
                     "Desenvolvimento de APIs REST com FastAPI e Django.",
-                    "ImplementaÃ§Ã£o de testes automatizados.",
+                    "Implementação de testes automatizados.",
                 ],
             },
             {
                 "empresa": "Startup ABC Ltda",
                 "cargo": "Desenvolvedor Frontend",
                 "descricao": [
-                    "CriaÃ§Ã£o de interfaces com React, TypeScript e Tailwind CSS.",
-                    "IntegraÃ§Ã£o com APIs de terceiros.",
+                    "Criação de interfaces com React, TypeScript e Tailwind CSS.",
+                    "Integração com APIs de terceiros.",
                 ],
             },
         ],
-        "formacoes": [{"instituicao": "USP", "curso": "CiÃªncia da ComputaÃ§Ã£o"}],
+        "formacoes": [{"instituicao": "USP", "curso": "Ciência da Computação"}],
     }
 
     from services.resume_analyzer import analisar_match
 
     resultado = await analisar_match(curriculo, VAGA_EXEMPLO)
     if not resultado:
-        return {"resultado": "FALHA", "detalhes": "Analisador nÃ£o retornou resultado"}
+        return {"resultado": "FALHA", "detalhes": "Analisador não retornou resultado"}
 
     erros = []
     if not resultado.get("compatibilidade_geral"):
@@ -303,24 +303,24 @@ async def test_analisar_match() -> dict:
 
     return {
         "resultado": "PASSOU",
-        "detalhes": f"AnÃ¡lise OK â€” {resultado.get('compatibilidade_geral')} | {len(resultado.get('skills_presentes', []))} skills OK, {len(resultado.get('skills_faltando', []))} faltando\n**Score:** {resultado.get('score_estimado')}/100",
+        "detalhes": f"Análise OK — {resultado.get('compatibilidade_geral')} | {len(resultado.get('skills_presentes', []))} skills OK, {len(resultado.get('skills_faltando', []))} faltando\n**Score:** {resultado.get('score_estimado')}/100",
     }
 
 
 async def test_cover_letter() -> dict:
     prompt = (
-        "VocÃª Ã© um especialista em redaÃ§Ã£o profissional. Gere uma carta de apresentaÃ§Ã£o "
-        "(cover letter) para a vaga abaixo, em portuguÃªs, tom profissional e personalizado.\n\n"
-        "NUNCA minta. Use apenas as informaÃ§Ãµes do candidato fornecidas.\n\n"
+        "Você é um especialista em redação profissional. Gere uma carta de apresentação "
+        "(cover letter) para a vaga abaixo, em português, tom profissional e personalizado.\n\n"
+        "NUNCA minta. Use apenas as informações do candidato fornecidas.\n\n"
         f"=== VAGA ===\n"
-        f"TÃ­tulo: {VAGA_EXEMPLO['titulo']}\n"
+        f"Título: {VAGA_EXEMPLO['titulo']}\n"
         f"Empresa: {VAGA_EXEMPLO['empresa']}\n"
-        f"DescriÃ§Ã£o: {VAGA_EXEMPLO['descricao'][:2000]}\n\n"
+        f"Descrição: {VAGA_EXEMPLO['descricao'][:2000]}\n\n"
         "=== CANDIDATO ===\n"
-        "Nome: JoÃ£o Silva\n"
-        "Resumo: Desenvolvedor Full Stack com 5 anos de experiÃªncia em Python, React e infraestrutura cloud.\n"
+        "Nome: João Silva\n"
+        "Resumo: Desenvolvedor Full Stack com 5 anos de experiência em Python, React e infraestrutura cloud.\n"
         "Skills principais: Python, FastAPI, Django, PostgreSQL, Docker, AWS\n\n"
-        "Retorne APENAS o texto da carta, sem explicaÃ§Ãµes extras."
+        "Retorne APENAS o texto da carta, sem explicações extras."
     )
 
     inicio = datetime.utcnow()
@@ -328,7 +328,7 @@ async def test_cover_letter() -> dict:
     duracao = (datetime.utcnow() - inicio).total_seconds()
 
     if not resposta:
-        return {"resultado": "FALHA", "detalhes": "LLM nÃ£o respondeu"}
+        return {"resultado": "FALHA", "detalhes": "LLM não respondeu"}
 
     erros = validar_cover_letter(resposta, VAGA_EXEMPLO["titulo"])
     if erros:
@@ -341,25 +341,25 @@ async def test_cover_letter() -> dict:
 
     return {
         "resultado": "PASSOU",
-        "detalhes": f"Cover letter OK â€” {len(resposta.split())} palavras\n**Tempo:** {duracao:.1f}s\n\n```\n{resposta[:600]}\n```",
+        "detalhes": f"Cover letter OK — {len(resposta.split())} palavras\n**Tempo:** {duracao:.1f}s\n\n```\n{resposta[:600]}\n```",
     }
 
 
 async def main():
     print("=" * 60)
-    print("  TESTE LLM â€” OperaÃ§Ãµes de CurrÃ­culo")
+    print("  TESTE LLM — Operações de Currículo")
     print("=" * 60)
 
     print(f"\nðŸ“¡ Verificando LLM em {settings.lm_studio_url}...")
     disponivel = await testar_llm_disponivel()
     if not disponivel:
-        print(f"âŒ LLM indisponÃ­vel em {settings.lm_studio_url}")
+        print(f"❌ LLM indisponível em {settings.lm_studio_url}")
         print(f"   Fallback: {settings.ollama_url}")
     else:
-        print(f"âœ… LLM disponÃ­vel: {settings.lm_studio_model}")
+        print(f"✅ LLM disponível: {settings.lm_studio_model}")
 
     print("\n" + "-" * 60)
-    print("1ï¸âƒ£  Teste: Parse de CurrÃ­culo")
+    print("1️⃣  Teste: Parse de Currículo")
     print("-" * 60)
     parse_result = await test_parse_curriculo()
     print(f"   Resultado: {parse_result['resultado']}")
@@ -367,7 +367,7 @@ async def main():
         print(f"   {parse_result['detalhes'][:200]}...")
 
     print("\n" + "-" * 60)
-    print("2ï¸âƒ£  Teste: AnÃ¡lise de Match (currÃ­culo vs vaga)")
+    print("2️⃣  Teste: Análise de Match (currículo vs vaga)")
     print("-" * 60)
     otim_result = await test_analisar_match()
     print(f"   Resultado: {otim_result['resultado']}")
@@ -375,7 +375,7 @@ async def main():
         print(f"   {otim_result['detalhes'][:200]}...")
 
     print("\n" + "-" * 60)
-    print("3ï¸âƒ£  Teste: Cover Letter")
+    print("3️⃣  Teste: Cover Letter")
     print("-" * 60)
     cover_result = await test_cover_letter()
     print(f"   Resultado: {cover_result['resultado']}")
@@ -385,11 +385,11 @@ async def main():
     secoes = [
         {
             "titulo": "Disponibilidade",
-            "resultado": "âœ… Online" if disponivel else "âŒ Offline",
+            "resultado": "✅ Online" if disponivel else "❌ Offline",
             "detalhes": f"URL: {settings.lm_studio_url}\nModelo: {settings.lm_studio_model}\nFallback: {settings.ollama_url}",
         },
-        {"titulo": "1. Parse de CurrÃ­culo", **parse_result},
-        {"titulo": "2. AnÃ¡lise de Match", **otim_result},
+        {"titulo": "1. Parse de Currículo", **parse_result},
+        {"titulo": "2. Análise de Match", **otim_result},
         {"titulo": "3. Cover Letter", **cover_result},
     ]
 
@@ -405,15 +405,15 @@ async def main():
             "titulo": "Resumo Final",
             "resultado": f"{total}/{total_tests} testes passaram",
             "detalhes": (
-                "âœ… Todos os testes OK â€” LLM pronta para operaÃ§Ãµes de currÃ­culo\n"
+                "✅ Todos os testes OK — LLM pronta para operações de currículo\n"
                 if total == total_tests
-                else "âš ï¸ Alguns testes falharam â€” revisar prompts ou modelo\n"
+                else "⚠️ Alguns testes falharam — revisar prompts ou modelo\n"
             ),
         }
     )
 
-    relatorio_path = escrever_relatorio("OperaÃ§Ãµes de CurrÃ­culo", secoes)
-    print(f"\nðŸ“ RelatÃ³rio salvo em: {relatorio_path}")
+    relatorio_path = escrever_relatorio("Operações de Currículo", secoes)
+    print(f"\nðŸ“ Relatório salvo em: {relatorio_path}")
 
     if disponivel:
         print(f"\n{'=' * 60}")

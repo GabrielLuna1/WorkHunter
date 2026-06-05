@@ -7,7 +7,7 @@ from core.logger import logger
 
 
 REMOTE_FEEDS = {
-    # Feeds internacionais desativados â€” qualidade > quantidade
+    # Feeds internacionais desativados — qualidade > quantidade
     # "remoteok": "https://remoteok.com/feed",
 }
 
