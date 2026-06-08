@@ -177,6 +177,12 @@ async def enviar_mensagem(
                     yield {
                         "data": json.dumps({"type": "content", "token": event["token"]})
                     }
+                elif event["type"] == "error":
+                    yield {
+                        "event": "error",
+                        "data": json.dumps({"error": event["token"]}),
+                    }
+                    return
         except Exception as e:
             yield {"event": "error", "data": json.dumps({"error": str(e)})}
             return

@@ -327,4 +327,7 @@ async def chat_stream(
             _circuit_breaker.record_failure()
             continue
 
-    yield "\n\nDesculpe, nÃ£o consegui processar sua mensagem no momento. Tente novamente mais tarde."
+    yield {
+        "type": "error",
+        "token": "\n\nDesculpe, não consegui processar sua mensagem no momento. Tente novamente mais tarde.",
+    }
