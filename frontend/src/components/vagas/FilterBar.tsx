@@ -31,14 +31,6 @@ const FONTES = [
   { value: "infojobs", label: "InfoJobs" },
   { value: "vagasbr", label: "Vagas.com.br" },
   { value: "apinfo", label: "APInfo" },
-  { value: "programathor", label: "Programathor" },
-  { value: "99jobs", label: "99Jobs" },
-  { value: "greenhouse", label: "Greenhouse" },
-  { value: "lever", label: "Lever" },
-  { value: "workable", label: "Workable" },
-  { value: "taqe", label: "Taqe" },
-  { value: "proprio", label: "Proprio ATS" },
-  { value: "workday", label: "Workday" },
 ];
 
 const SCORES = [

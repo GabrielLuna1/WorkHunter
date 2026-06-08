@@ -6,10 +6,8 @@ from core.logger import logger
 from integrations.gupy import GupyCollector
 from integrations.infojobs import InfoJobsCollector
 
-from integrations.programathor import ProgramathorCollector
 from integrations.vagasbr import VagasBRCollector
 from integrations.apinfo import APInfoCollector
-from integrations.noventa_e_nove_jobs import NoventaENoveJobsCollector
 from services.dedup_service import DedupService
 from services.scoring_service import ScoringService
 from services.analise_service import AnaliseService
@@ -55,22 +53,8 @@ async def _coletar():
         except Exception as e:
             logger.warning("coleta.coletor_erro", fonte=c.nome, error=str(e))
 
-    # --- ATS Integradores (Greenhouse, Taqe, Workable) ---
-    logger.info("coleta.iniciando_ats_integradores")
-    try:
-        from integrations.ats import executar_integradores_ats
-
-        vagas_ats = await executar_integradores_ats(termos)
-        vagas_brutas.extend(vagas_ats)
-        logger.info("coleta.ats_concluida", total=len(vagas_ats))
-    except Exception as e:
-        logger.error("coleta.ats_erro", error=str(e))
-
     logger.info("coleta.iniciando_coletores_web")
-    coletores_web = [
-        ProgramathorCollector(termos=termos),
-        NoventaENoveJobsCollector(termos=termos),
-    ]
+    coletores_web: list = []
     for c in coletores_web:
         try:
             vagas = await c.coletar()

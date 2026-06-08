@@ -6,13 +6,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from core.database import database
 from core.logger import logger
 from integrations.gupy import GupyCollector
-from integrations.programathor import ProgramathorCollector
 from integrations.infojobs import InfoJobsCollector
-
 from integrations.vagasbr import VagasBRCollector
 from integrations.apinfo import APInfoCollector
-from integrations.noventa_e_nove_jobs import NoventaENoveJobsCollector
-from integrations.ats import executar_integradores_ats
 from services.dedup_service import DedupService
 from services.scoring_service import ScoringService
 from services.analise_service import AnaliseService
@@ -144,43 +140,9 @@ async def executar_coleta(termos: list[str]):
             ("InfoJobs (HTTP)", InfoJobsCollector(termos=termos)),
             ("Vagas.com (HTTP)", VagasBRCollector(termos=termos)),
             ("APInfo (HTTP)", APInfoCollector(termos=termos)),
-            ("Programathor (Web)", ProgramathorCollector(termos=termos)),
-            ("99Jobs (Web)", NoventaENoveJobsCollector(termos=termos)),
         ]
 
         vagas_brutas = []
-
-        # --- ATS Integradores (Greenhouse, Taqe, Workable) ---
-        await db["coleta_status"].update_one(
-            {"_id": "status"},
-            {
-                "$set": {
-                    "mensagem": "Buscando nos ATS Integradores (Greenhouse, Taqe, Workable)...",
-                    "progresso": 76,
-                    "coletor_atual": "ATS Integradores",
-                    "atualizado_em": datetime.utcnow(),
-                }
-            },
-        )
-        try:
-            vagas_ats = await asyncio.wait_for(
-                executar_integradores_ats(termos, db=db),
-                timeout=300.0,
-            )
-            vagas_brutas.extend(vagas_ats)
-            logger.info("coleta.ats_concluida", total=len(vagas_ats))
-        except asyncio.TimeoutError:
-            logger.error("coleta.ats_timeout")
-            await db["coleta_status"].update_one(
-                {"_id": "status"},
-                {
-                    "$push": {
-                        "detalhes": "⏰ ATS: timeout após 5 minutos — pulando para os demais coletores"
-                    }
-                },
-            )
-        except Exception as e:
-            logger.error("coleta.ats_erro", error=str(e))
         total_coletores = len(todos_coletores)
 
         for idx, (nome_exibivel, collector) in enumerate(todos_coletores):
