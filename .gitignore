@@ -38,3 +38,7 @@ server_err.txt
 .vscode/
 *.swp
 *.swo
+
+# Virtual environment
+venv/
+backend/venv/

@@ -6,30 +6,28 @@ echo  WorkPlus — Iniciando servicos
 echo ========================================
 echo.
 
-:: Verificar Python
-where python >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo [ERRO] Python nao encontrado no PATH. Instale Python e adicione ao PATH.
+set "VENV_DIR=D:\Work\backend\venv"
+set "PYTHON=%VENV_DIR%\Scripts\python.exe"
+
+:: Verificar venv
+if not exist "%PYTHON%" (
+    echo [ERRO] Venv nao encontrado em %VENV_DIR%
+    echo        Execute: python -m venv %VENV_DIR%
     pause
     exit /b 1
 )
-echo [OK] Python encontrado: 
-python --version
+echo [OK] Python: %PYTHON%
+%PYTHON% --version
 
-:: Verificar dependencias do backend
+:: Verificar e instalar dependencias do backend
 echo [Backend] Verificando dependencias...
-cd /d D:\Work\backend
-pip show weasyprint >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo [Backend] Dependencias faltando. Instalando...
-    pip install -r requirements.txt
-    echo [Backend] Instalando Playwright browsers...
-    python -m playwright install chromium
-)
+%PYTHON% -m pip install -r D:\Work\backend\requirements.txt --quiet
+echo [Backend] Instalando Playwright browsers...
+%PYTHON% -m playwright install chromium
 
 :: Iniciar Backend (com terminal visivel + log)
 echo [Backend] Iniciando FastAPI na porta 8070...
-start "WorkPlus-Backend" cmd /c "cd /d D:\Work\backend && python -m uvicorn main:app --reload --port 8070 --log-level debug"
+start "WorkPlus-Backend" cmd /c "cd /d D:\Work\backend && %PYTHON% -m uvicorn main:app --reload --port 8070 --log-level debug"
 
 :: Esperar 3s e verificar se backend subiu
 timeout /t 3 /nobreak >nul
