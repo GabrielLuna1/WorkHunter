@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 import re
 import random
@@ -302,11 +302,127 @@ async def gerar_cover_letter(
     return _parse_json(result)
 
 
+async def _chat_stream_lm_studio(
+    messages: list,
+    temperature: float,
+    max_tokens: int,
+) -> AsyncGenerator[dict, None]:
+    cfg_fn = _PROVIDER_CONFIGS.get("lm_studio")
+    if not cfg_fn:
+        return
+    cfg = cfg_fn()
+    payload = {
+        "model": cfg["model"],
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": True,
+    }
+    url = cfg["url"]
+    async with httpx.AsyncClient(timeout=180) as client:
+        async with client.stream("POST", url, json=payload) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_str)
+                        delta = data.get("choices", [{}])[0].get("delta", {})
+                        reasoning = delta.get("reasoning_content", "")
+                        if reasoning:
+                            yield {"type": "reasoning", "token": reasoning}
+                        content = delta.get("content", "")
+                        if content:
+                            yield {"type": "content", "token": content}
+                    except json.JSONDecodeError:
+                        continue
+
+
+async def _chat_stream_ollama(
+    messages: list,
+    temperature: float,
+    max_tokens: int,
+) -> AsyncGenerator[dict, None]:
+    base = _ollama_base()
+    payload = {
+        "model": settings.ollama_model,
+        "messages": messages,
+        "options": {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        },
+        "stream": True,
+    }
+    url = f"{base}/api/chat"
+    thinking_buffer = ""
+    in_thinking = False
+    think_open_emitted = False
+
+    async with httpx.AsyncClient(timeout=180) as client:
+        async with client.stream("POST", url, json=payload) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                content = data.get("message", {}).get("content", "")
+                if not content:
+                    if data.get("done"):
+                        break
+                    continue
+
+                if not think_open_emitted:
+                    think_open_emitted = True
+
+                # Track think tags in streaming content
+                while content:
+                    if not in_thinking:
+                        idx = content.find("")
+                        if idx == -1:
+                            yield {"type": "content", "token": content}
+                            break
+                        else:
+                            before = content[:idx]
+                            if before:
+                                yield {"type": "content", "token": before}
+                            in_thinking = True
+                            content = content[idx + 7 :]
+                    else:
+                        idx = content.find("")
+                        if idx == -1:
+                            thinking_buffer += content
+                            yield {"type": "reasoning", "token": content}
+                            break
+                        else:
+                            before = content[:idx]
+                            if before:
+                                thinking_buffer += before
+                                yield {"type": "reasoning", "token": before}
+                            in_thinking = False
+                            content = content[idx + 8 :]
+
+    # If thinking tag never closed, flush as content
+    if in_thinking and thinking_buffer:
+        yield {"type": "content", "token": thinking_buffer}
+
+
+_STREAM_HANDLERS = {
+    "ollama": _chat_stream_ollama,
+    "lm_studio": _chat_stream_lm_studio,
+}
+
+
 async def chat_stream(
     messages: list,
     temperature: float = 0.7,
     max_tokens: int = 2048,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[dict, None]:
     active = get_active_provider()
     providers = [active]
 
@@ -315,50 +431,14 @@ async def chat_stream(
             logger.warning("ai.circuit_breaker_aberto_stream", provider=provider)
             continue
 
-        cfg_fn = _PROVIDER_CONFIGS.get(provider)
-        if not cfg_fn:
+        handler = _STREAM_HANDLERS.get(provider)
+        if not handler:
+            logger.warning("ai.sem_handler_stream", provider=provider)
             continue
 
-        cfg = cfg_fn()
-        payload = {
-            "model": cfg["model"],
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": True,
-        }
-
-        headers = {"Content-Type": "application/json"}
-        if provider == "openrouter" and cfg.get("api_key"):
-            headers["Authorization"] = f"Bearer {cfg['api_key']}"
-            if settings.openrouter_site_url:
-                headers["HTTP-Referer"] = settings.openrouter_site_url
-            if settings.openrouter_site_name:
-                headers["X-Title"] = settings.openrouter_site_name
-        url = cfg["url"]
-
         try:
-            async with httpx.AsyncClient(timeout=180) as client:
-                async with client.stream(
-                    "POST", url, json=payload, headers=headers
-                ) as resp:
-                    resp.raise_for_status()
-                    async for line in resp.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:].strip()
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                data = json.loads(data_str)
-                                delta = data.get("choices", [{}])[0].get("delta", {})
-                                reasoning = delta.get("reasoning_content", "")
-                                if reasoning:
-                                    yield {"type": "reasoning", "token": reasoning}
-                                content = delta.get("content", "")
-                                if content:
-                                    yield {"type": "content", "token": content}
-                            except json.JSONDecodeError:
-                                continue
+            async for event in handler(messages, temperature, max_tokens):
+                yield event
             _circuit_breaker.record_success()
             return
         except Exception as e:
