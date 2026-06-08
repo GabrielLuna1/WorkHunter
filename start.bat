@@ -2,7 +2,7 @@
 title WorkPlus
 
 echo ========================================
-echo  WorkPlus — Iniciando servicos
+echo  WorkPlus - Iniciando servicos
 echo ========================================
 echo.
 
@@ -21,7 +21,7 @@ echo [OK] Python: %PYTHON%
 
 :: Verificar e instalar dependencias do backend
 echo [Backend] Verificando dependencias...
-%PYTHON% -m pip install -r D:\Work\backend\requirements.txt --quiet
+%PYTHON% -m pip install -r D:\Work\backend\requirements.txt --quiet --disable-pip-version-check
 echo [Backend] Instalando Playwright browsers...
 %PYTHON% -m playwright install chromium
 
