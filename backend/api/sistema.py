@@ -8,7 +8,6 @@ from core.logger import logger
 from integrations.gupy import GupyCollector
 from integrations.infojobs import InfoJobsCollector
 from integrations.vagasbr import VagasBRCollector
-from integrations.apinfo import APInfoCollector
 from services.dedup_service import DedupService
 from services.scoring_service import ScoringService
 from services.analise_service import AnaliseService
@@ -139,7 +138,6 @@ async def executar_coleta(termos: list[str]):
             ("Gupy (API)", GupyCollector(termos=termos)),
             ("InfoJobs (HTTP)", InfoJobsCollector(termos=termos)),
             ("Vagas.com (HTTP)", VagasBRCollector(termos=termos)),
-            ("APInfo (HTTP)", APInfoCollector(termos=termos)),
         ]
 
         vagas_brutas = []

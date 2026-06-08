@@ -30,7 +30,7 @@ const FONTES = [
   { value: "gupy", label: "Gupy" },
   { value: "infojobs", label: "InfoJobs" },
   { value: "vagasbr", label: "Vagas.com.br" },
-  { value: "apinfo", label: "APInfo" },
+
 ];
 
 const SCORES = [

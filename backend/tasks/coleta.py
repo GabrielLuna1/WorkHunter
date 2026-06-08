@@ -7,7 +7,7 @@ from integrations.gupy import GupyCollector
 from integrations.infojobs import InfoJobsCollector
 
 from integrations.vagasbr import VagasBRCollector
-from integrations.apinfo import APInfoCollector
+
 from services.dedup_service import DedupService
 from services.scoring_service import ScoringService
 from services.analise_service import AnaliseService
