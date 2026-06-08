@@ -1,4 +1,4 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 import hashlib
 import re
 import asyncio
@@ -37,12 +37,18 @@ class APInfoCollector(BaseCollector):
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/125.0.0.0 Safari/537.36"
+                "Chrome/127.0.0.0 Safari/537.36"
             ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
         }
 
         async with httpx.AsyncClient(
-            follow_redirects=True, timeout=15, headers=headers
+            follow_redirects=True, timeout=20, headers=headers
         ) as client:
             for termo in self.termos:
                 try:
@@ -60,8 +66,18 @@ class APInfoCollector(BaseCollector):
         vagas: List[VagaBruta] = []
 
         # 1. Primeiro request para estabelecer sessÃ£o
-        await client.get(self.BASE_URL, headers={"Referer": self.BASE_URL})
-        await asyncio.sleep(1)
+        try:
+            r = await client.get(
+                self.BASE_URL,
+                headers={"Referer": self.BASE_URL},
+                timeout=15,
+            )
+            r.raise_for_status()
+        except Exception as e:
+            logger.warning("apinfo.erro_get_inicial", termo=termo, error=str(e))
+            return vagas
+
+        await asyncio.sleep(1.5)
 
         # 2. POST de busca
         data = {
@@ -72,7 +88,12 @@ class APInfoCollector(BaseCollector):
             "ddmmaa2": "",
             "pag": "1",
         }
-        resp = await client.post(self.SEARCH_URL, data=data)
+        resp = await client.post(
+            self.SEARCH_URL,
+            data=data,
+            headers={"Referer": self.BASE_URL},
+            timeout=15,
+        )
         if resp.status_code != 200:
             logger.warning("apinfo.erro_http", status=resp.status_code, termo=termo)
             return vagas
@@ -108,7 +129,11 @@ class APInfoCollector(BaseCollector):
                 data["pag"] = str(pagina)
                 data["pkey"] = pkey
                 data["tcv"] = tcv
-                resp = await client.post(self.SEARCH_URL, data=data)
+                resp = await client.post(
+                    self.SEARCH_URL,
+                    data=data,
+                    headers={"Referer": self.SEARCH_URL},
+                )
                 if resp.status_code != 200:
                     break
                 html = resp.content.decode("iso-8859-1", errors="replace")
