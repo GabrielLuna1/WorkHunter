@@ -805,7 +805,7 @@ WorkHunter é um projeto **open source educacional**, criado como portfólio e f
 ### **Descubra. Organize. Analise.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)]()
-[![PRs: Welcome](https://img.shields.io/badge/PRs-Welcome-ff69b4?style=for-the-badge)]()
+[![PRs: Welcome](https://img.shields.io/badge/PRs-Welcome-ff69b4?style=for-the-badge)](https://github.com/GabrielLuna1/WorkHunter)
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:d4af37,100:1a1a2e&height=120&section=footer" width="100%">
 
