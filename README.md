@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,100:d4af37&height=200&section=header&text=WORKPLUS&fontSize=60&fontColor=d4af37&animation=fadeIn&fontAlignY=35">
-    <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,100:d4af37&height=200&section=header&text=WORKPLUS&fontSize=60&fontColor=d4af37&animation=fadeIn&fontAlignY=35" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,100:d4af37&height=200&section=header&text=WORKHUNTER&fontSize=60&fontColor=d4af37&animation=fadeIn&fontAlignY=35">
+    <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,100:d4af37&height=200&section=header&text=WORKHUNTER&fontSize=60&fontColor=d4af37&animation=fadeIn&fontAlignY=35" width="100%">
   </picture>
 </p>
 
@@ -24,11 +24,11 @@
 [![Status: Active](https://img.shields.io/badge/Status-Active-2ea44f?style=flat-square)]()
 [![AI: Local](https://img.shields.io/badge/AI-Local_LLM-8B5CF6?style=flat-square)]()
 
-> WorkHunter centraliza vagas de tecnologia de 12 fontes, aplica match score por IA local e organiza tudo em um pipeline kanban — coleta, analisa e acompanha oportunidades sem você precisar visitar dezenas de sites manualmente.
+> WorkHunter centraliza vagas de tecnologia de 3 fontes, aplica match score por IA local e organiza tudo em um pipeline kanban — coleta, analisa e acompanha oportunidades sem você precisar visitar dezenas de sites manualmente.
 >
 > ⚠️ O WorkHunter **não envia currículos, não preenche formulários e não se candidata automaticamente**. Todo o processo de aplicação é manual e intencional, feito diretamente no site de cada empresa. O sistema cuida da etapa anterior: a inteligência de mercado, a triagem e a organização — para que você chegue ao momento de aplicar já com informação suficiente para decidir se aquela vaga vale seu tempo.
 >
-> 📌 **Aviso Legal:** WorkHunter é um projeto **open source educacional**, não afiliado a nenhuma das plataformas ou portais listados. O sistema opera com limites responsáveis de requisições e respeito a `robots.txt`. Cada usuário é responsável por verificar os Termos de Serviço das fontes que utiliza. Nenhum dado pessoal é enviado a servidores externos — toda a IA roda localmente via LM Studio.
+> 📌 **Aviso Legal:** WorkHunter é um projeto **open source educacional**, não afiliado a nenhuma das plataformas ou portais listados. O sistema opera com limites responsáveis de requisições e respeito a `robots.txt`. Cada usuário é responsável por verificar os Termos de Serviço das fontes que utiliza. Nenhum dado pessoal é enviado a servidores externos — toda a IA roda localmente via Ollama (padrão) ou LM Studio.
 
 [⚡ Quick Start](#-quick-start) •
 [🧠 Features](#-features) •
@@ -47,7 +47,7 @@ O WorkHunter é uma plataforma pessoal de busca e gestão de vagas de tecnologia
 
 ### Coleta de Vagas
 
-O sistema acessa **12 fontes diferentes** — incluindo APIs públicas de plataformas de recrutamento, portais de emprego e sites de carreira corporativos. Após a coleta, as vagas passam por:
+O sistema acessa **3 fontes diferentes** — portais brasileiros de emprego. Após a coleta, as vagas passam por:
 - Deduplicação (evita repetições entre fontes)
 - Filtragem de relevância (baseada no perfil do usuário)
 - Filtragem geográfica (apenas vagas brasileiras)
@@ -94,22 +94,13 @@ Para vagas de interesse, uma análise mais profunda pode ser solicitada via IA, 
 
 ## 📡 Fontes
 
-O WorkHunter consulta vagas de tecnologia através de plataformas abertas e portais de emprego:
+O WorkHunter consulta vagas de tecnologia através de portais brasileiros de emprego:
 
 | | Fonte | Tipo |
 |:-:|-------|------|
-| <img src="https://www.google.com/s2/favicons?domain=greenhouse.io&sz=16" width="16"> | **Greenhouse** | Plataforma de recrutamento |
-| <img src="https://www.google.com/s2/favicons?domain=lever.co&sz=16" width="16"> | **Lever** | Plataforma de recrutamento |
-| <img src="https://www.google.com/s2/favicons?domain=workable.com&sz=16" width="16"> | **Workable** | Plataforma de recrutamento |
 | <img src="https://www.google.com/s2/favicons?domain=gupy.io&sz=16" width="16"> | **Gupy** | Plataforma de recrutamento |
 | <img src="https://www.google.com/s2/favicons?domain=infojobs.com.br&sz=16" width="16"> | **InfoJobs** | Portal de empregos |
 | <img src="https://www.google.com/s2/favicons?domain=vagas.com.br&sz=16" width="16"> | **Vagas.com.br** | Portal de empregos |
-| <img src="https://www.google.com/s2/favicons?domain=apinfo.com&sz=16" width="16"> | **APInfo** | Portal de empregos |
-| <img src="https://www.google.com/s2/favicons?domain=programathor.com.br&sz=16" width="16"> | **Programathor** | Portal de empregos tech |
-| <img src="https://www.google.com/s2/favicons?domain=99jobs.com&sz=16" width="16"> | **99Jobs** | Portal de empregos |
-| <img src="https://www.google.com/s2/favicons?domain=myworkdayjobs.com&sz=16" width="16"> | **Workday** | Plataforma de recrutamento |
-| <img src="https://www.google.com/s2/favicons?domain=taqe.com.br&sz=16" width="16"> | **Taqe** | Plataforma de recrutamento |
-| <img src="https://www.google.com/s2/favicons?domain=bancointer.com.br&sz=16" width="16"> | **Próprio ATS** | Sites de carreira corporativos |
 
 ---
 
@@ -128,7 +119,7 @@ graph TB
 
     subgraph Backend ["Backend — FastAPI · Python 3.11"]
         API["REST API — 16 Routers"]
-        AI["AI Client — LM Studio"]
+        AI["AI Client — Ollama / LM Studio"]
         CHAT["Chat IA — SSE Streaming + Tools"]
         TELEGRAM["Telegram Bot"]
         CELERY["Celery Tasks — Coleta 2/2h"]
@@ -140,9 +131,7 @@ graph TB
     end
 
     subgraph Integrations ["Integrações"]
-        API_COL["APIs Públicas"]
-        WEB_COL["Portais de Emprego"]
-        ATS_COL["Sites de Carreira"]
+        WEB_COL["Portais Brasileiros"]
     end
 
     Frontend <-->|"REST + SSE"| API
@@ -153,9 +142,9 @@ graph TB
     CELERY --> REDIS
     CELERY --> Integrations
 
-    AI -->|"LM Studio :1234"| LMSTUDIO["LM Studio — LLM Local"]
+    AI -->|"Ollama :11434"| OLLAMA["Ollama — LLM Local (padrão)"]
 
-    style LMSTUDIO fill:#2d1b69,stroke:#8B5CF6,stroke-width:2px
+    style OLLAMA fill:#2d1b69,stroke:#8B5CF6,stroke-width:2px
 ```
 
 ### Fluxo de Coleta
@@ -165,9 +154,7 @@ Perfil do Usuário (termos de busca)
     │
     ▼
 ┌─────────────────────────────────────────────────────┐
-│  APIs Públicas (Gupy, Greenhouse, Lever, Workable)   │
-│  Portais de Emprego (InfoJobs, Vagas.com, APInfo)    │
-│  Sites de Carreira (Workday, Taqe, entre outros)     │
+│  Portais Brasileiros (Gupy, InfoJobs, Vagas.com.br)  │
 └──────────────────────┬──────────────────────────────┘
                        │
                        ▼
@@ -392,7 +379,7 @@ flowchart TD
 
   subgraph FILTERS["Barra de Filtros"]
     F1["🔍 Busca texto"]
-    F2["📡 Fonte (12 opções)"]
+    F2["📡 Fonte (3 opções)"]
     F3["📍 Estado/UF"]
     F4["🏠 Modelo\nRemoto · Híbrido · Presencial"]
     F5["⭐ Score\nAny · ≥80 · ≥60 · ≥40"]
@@ -658,8 +645,8 @@ Ou use `start.bat` na raiz para subir tudo automaticamente.
 ### IA Local (Opcional)
 
 ```bash
-# Baixe o LM Studio em https://lmstudio.ai
-# Carregue seu modelo em http://127.0.0.1:1234
+# Provider padrão: Ollama (http://127.0.0.1:11434)
+# Alternativa: LM Studio (http://127.0.0.1:1234)
 
 # Sem IA local? A plataforma funciona,
 # mas sem análise de vagas e match score
@@ -701,6 +688,7 @@ Ou use `start.bat` na raiz para subir tudo automaticamente.
 <details open>
 <summary><strong>Inteligência Artificial</strong></summary>
 
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
 ![LM Studio](https://img.shields.io/badge/LM_Studio-8B5CF6?style=for-the-badge&logo=local&logoColor=white)
 
 </details>
@@ -721,10 +709,8 @@ workplus/
 │   │   ├── analytics.py      # 9 endpoints de analytics
 │   │   ├── notifications.py  # Telegram + Email config
 │   │   └── ...               # analise, perfil, ai, eventos...
-│   ├── integrations/         # 12 integrações com fontes de vagas
-│   │   ├── portais.py         # Portais brasileiros (InfoJobs, Vagas, etc)
-│   │   ├── plataformas.py     # Plataformas de recrutamento (Gupy, etc)
-│   │   └── ats/               # Sites de carreira (Workday, Taqe, etc)
+│   ├── integrations/         # 3 integrações com fontes de vagas
+│   │   └── portais.py         # Portais brasileiros (Gupy, InfoJobs, Vagas.com.br)
 │   ├── core/                 # Config, DB, Logger, Auth
 │   ├── models/               # Pydantic models (11 coleções)
 │   ├── services/             # Serviços (scoring, dedup, IA, currículo...)
@@ -752,6 +738,11 @@ workplus/
 <summary><strong>🤖 IA</strong></summary>
 
 ```env
+# Provider primário (Ollama)
+OLLAMA_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:7b
+
+# Provider alternativo (LM Studio)
 LM_STUDIO_URL=http://127.0.0.1:1234
 LM_STUDIO_MODEL=nome-do-seu-modelo
 ```
