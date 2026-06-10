@@ -11,7 +11,7 @@ interface UploadZoneProps {
   onSuccess: (data: any) => void
 }
 
-type Step = 'idle' | 'uploading' | 'parsing' | 'structuring' | 'success' | 'error'
+type Step = 'idle' | 'uploading' | 'success' | 'error'
 
 export function UploadZone({ onSuccess }: UploadZoneProps) {
   const [step, setStep] = useState<Step>('idle')
@@ -28,14 +28,11 @@ export function UploadZone({ onSuccess }: UploadZoneProps) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      setStep('parsing')
 
       const res = await api.post(`${API}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 60000,
+        timeout: 30000,
       })
-
-      setStep('structuring')
 
       if (res.data?.success) {
         setStep('success')
@@ -76,25 +73,6 @@ export function UploadZone({ onSuccess }: UploadZoneProps) {
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-10 h-10 animate-spin text-accent" />
             <p className="text-sm text-ink-muted">Enviando {fileName}...</p>
-          </div>
-        )}
-        {step === 'parsing' && (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin text-accent" />
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <p className="text-sm text-ink-muted">Importando currículo...</p>
-            </div>
-          </div>
-        )}
-        {step === 'structuring' && (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin text-accent" />
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="w-2 h-2 rounded-full bg-accent/60 animate-pulse" style={{ animationDelay: '0.3s' }} />
-              <p className="text-sm text-ink-muted">Estruturando documento...</p>
-            </div>
           </div>
         )}
         {step === 'success' && (

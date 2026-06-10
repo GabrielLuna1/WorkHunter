@@ -1,4 +1,5 @@
-﻿import os
+﻿import asyncio
+import os
 import tempfile
 import json
 from datetime import datetime
@@ -8,9 +9,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from services.resume_parser import parse_resume
 from services.curriculo_service import (
-    salvar_curriculo,
     buscar_curriculo_ativo,
     listar_versoes,
     restaurar_versao,
@@ -18,9 +17,9 @@ from services.curriculo_service import (
     deletar_versao,
     duplicar_versao,
     renomear_versao,
+    processar_curriculo,
 )
 from services.curriculo_export import generate_pdf, generate_docx
-from services.profile_extractor import extract_and_save_profile
 from core.database import database
 
 router = APIRouter(tags=["curriculo"])
@@ -71,42 +70,59 @@ async def upload_curriculo(file: UploadFile = File(...)):
             detail=f"Arquivo muito grande: {size_mb:.1f}MB. MÃ¡ximo: {MAX_FILE_SIZE_MB}MB.",
         )
 
+    # Save to temp and parse immediately (fast, no AI)
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
 
-    try:
-        curriculo = await parse_resume(tmp_path)
-        # tipTapJson is generated lazily on export, not on upload
-        doc = await salvar_curriculo(curriculo)
+    from services.resume_parser import parse_resume
+    from services.curriculo_service import (
+        salvar_curriculo,
+        atualizar_status_processamento,
+    )
+    from services.profile_extractor import extract_and_save_profile
+    import shutil
 
-        # Save file permanently
-        perm_filename = f"{doc['_id']}{ext}"
-        perm_path = UPLOAD_DIR / perm_filename
-        import shutil
+    curriculo = await parse_resume(tmp_path)
 
-        shutil.move(tmp_path, perm_path)
+    # Create document with full parsed data
+    doc = await salvar_curriculo(curriculo)
 
-        # Update document with new path
-        doc = await atualizar_versao(
-            doc["_id"], {"arquivo_original_path": str(perm_path)}
-        )
+    # Move file to permanent location
+    perm_filename = f"{doc['_id']}{ext}"
+    perm_path = UPLOAD_DIR / perm_filename
+    shutil.move(tmp_path, perm_path)
 
-        # Auto-extract professional profile
+    # Update file path and mark as processing for profile extraction
+    await atualizar_versao(doc["_id"], {"arquivo_original_path": str(perm_path)})
+    await atualizar_status_processamento(
+        doc["_id"], True, "Extraindo perfil profissional..."
+    )
+
+    # Refresh doc after updates
+    doc_completo = await buscar_curriculo_ativo()
+
+    # Background: only profile extraction (slow AI part)
+    async def extrair_perfil():
         try:
-            await extract_and_save_profile("default", doc, database.get_db())
+            doc_atual = await buscar_curriculo_ativo()
+            if doc_atual:
+                doc_atual["_id"] = doc_atual.get("_id", doc["_id"])
+                await extract_and_save_profile("default", doc_atual, database.get_db())
+            await atualizar_status_processamento(doc["_id"], False, "concluido")
         except Exception:
-            pass
+            from core.logger import logger
 
-        return JSONResponse(content={"success": True, "data": _serialize(_slim(doc))})
-    except ValueError as e:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        raise HTTPException(status_code=422, detail=str(e))
-    except Exception as e:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        raise HTTPException(status_code=500, detail=str(e))
+            logger.error("curriculo.extrair_perfil_erro", doc_id=doc["_id"])
+            await atualizar_status_processamento(
+                doc["_id"], False, "erro na extracao de perfil"
+            )
+
+    asyncio.create_task(extrair_perfil())
+
+    return JSONResponse(
+        content={"success": True, "data": _serialize(_slim(doc_completo or doc))}
+    )
 
 
 @router.get("/")

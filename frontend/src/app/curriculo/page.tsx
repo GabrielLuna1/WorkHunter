@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 import { ResumeViewer } from '@/components/resume-viewer/ResumeViewer'
 import { UploadZone } from '@/components/curriculo/UploadZone'
@@ -43,12 +43,18 @@ export default function CurriculoPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [showUpload, setShowUpload] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [subState, setSubState] = useState('')
   const [showInsights, setShowInsights] = useState(false)
   const [viewMode, setViewMode] = useState<'parsed' | 'original'>('parsed')
+  const [processando, setProcessando] = useState(false)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     carregar()
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
   }, [])
 
   async function carregar() {
@@ -66,10 +72,14 @@ export default function CurriculoPage() {
         const curriculo = curriculoRes.data.data
         setVersaoAtiva(curriculo)
         setVersaoAtivaId(curriculo._id)
-        
+
+        if (curriculo.processando) {
+          setProcessando(true)
+          iniciarPolling()
+        }
+
         const hasData = (curriculo.experiencias?.length || 0) + (curriculo.formacoes?.length || 0) > 0
         setViewMode(hasData ? 'parsed' : 'original')
-        
         setPageState('viewer')
       } else {
         setPageState('upload')
@@ -78,6 +88,28 @@ export default function CurriculoPage() {
       setPageState('error')
       setErrorMsg('Erro ao carregar currículo. Verifique se o servidor está rodando.')
     }
+  }
+
+  function iniciarPolling() {
+    if (pollingRef.current) clearInterval(pollingRef.current)
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await api.get(`${API}/`)
+        const curriculo = res.data?.data
+        if (curriculo && !curriculo.processando) {
+          if (pollingRef.current) clearInterval(pollingRef.current)
+          pollingRef.current = null
+          setProcessando(false)
+          setVersaoAtiva(curriculo)
+          setVersaoAtivaId(curriculo._id)
+          const hasData = (curriculo.experiencias?.length || 0) + (curriculo.formacoes?.length || 0) > 0
+          setViewMode(hasData ? 'parsed' : 'original')
+          toast.success('Currículo processado!')
+        }
+      } catch {
+        // keep trying
+      }
+    }, 3000)
   }
 
   async function handleSelect(id: string) {
@@ -107,10 +139,15 @@ export default function CurriculoPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Excluir esta versão permanentemente?')) return
+    setDeleteTarget(id)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
     try {
-      await api.delete(`${API}/versoes/${id}`)
+      await api.delete(`${API}/versoes/${deleteTarget}`)
       toast.success('Versão excluída')
+      setDeleteTarget(null)
       await carregar()
     } catch {
       toast.error('Erro ao excluir')
@@ -144,7 +181,9 @@ export default function CurriculoPage() {
     setShowUpload(false)
     setVersaoAtiva(data)
     setVersaoAtivaId(data._id)
-    await carregar()
+    setProcessando(true)
+    setPageState('viewer')
+    iniciarPolling()
   }
 
   async function handleExport(formato: 'pdf' | 'docx') {
@@ -284,6 +323,12 @@ export default function CurriculoPage() {
                   {versaoLabel}
                 </span>
               )}
+              {processando && (
+                <span className="inline-flex items-center gap-1.5 text-[10px] text-accent bg-accent/8 px-2 py-0.5 rounded-full border border-accent/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  Analisando perfil…
+                </span>
+              )}
               {versaoAtiva?.parsing_confidence != null && (
                 <span
                   className="text-[9px] px-2 py-0.5 rounded-full border font-medium"
@@ -382,8 +427,14 @@ export default function CurriculoPage() {
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Quick stats */}
-              {versaoAtiva && (
+              {processando ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                  <p className="text-[10px] text-ink-tertiary text-center">
+                    Analisando currículo...
+                  </p>
+                </div>
+              ) : versaoAtiva ? (
                 <>
                   <InsightCard
                     label="Seções Detectadas"
@@ -420,7 +471,7 @@ export default function CurriculoPage() {
                     </div>
                   )}
                 </>
-              )}
+              ) : null}
 
               {/* Future features placeholder */}
               <div className="pt-3 border-t border-hairline">
@@ -432,6 +483,32 @@ export default function CurriculoPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      <Dialog.Root open={deleteTarget !== null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface border border-hairline rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <Dialog.Title className="text-sm font-semibold text-ink mb-2">
+              Excluir versão?
+            </Dialog.Title>
+            <p className="text-[12px] text-ink-muted leading-relaxed mb-6">
+              Esta ação não pode ser desfeita. A versão será removida permanentemente.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Dialog.Close className="px-3 py-1.5 text-[11px] text-ink-tertiary hover:text-ink-muted transition-colors rounded-lg">
+                Cancelar
+              </Dialog.Close>
+              <button
+                onClick={confirmDelete}
+                className="px-3 py-1.5 text-[11px] font-medium text-white bg-danger hover:bg-danger/90 transition-colors rounded-lg"
+              >
+                Excluir
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Upload modal */}
       <Dialog.Root open={showUpload} onOpenChange={setShowUpload}>

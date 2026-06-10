@@ -1,9 +1,12 @@
-﻿from datetime import datetime
+﻿import asyncio
+from datetime import datetime
 from typing import Optional
 from bson import ObjectId
 
 from core.database import database
 from models.curriculo_model import CurriculoSchema
+from services.resume_parser import parse_resume
+from services.profile_extractor import extract_and_save_profile
 
 
 COLLECTION = "curriculo_versoes"
@@ -36,12 +39,67 @@ async def salvar_curriculo(
     doc["user_id"] = user_id
     doc["versao"] = versao
     doc["ativo"] = True
+    doc["processando"] = True
+    doc["etapa_processamento"] = "salvo"
     doc["atualizado_em"] = datetime.utcnow()
 
     result = await collection.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
 
     return doc
+
+
+async def atualizar_status_processamento(
+    doc_id: str,
+    processando: bool,
+    etapa: str = "",
+) -> None:
+    collection = _db()[COLLECTION]
+    update = {
+        "$set": {
+            "processando": processando,
+            "etapa_processamento": etapa,
+            "atualizado_em": datetime.utcnow(),
+        }
+    }
+    await collection.update_one({"_id": ObjectId(doc_id)}, update)
+
+
+async def processar_curriculo(
+    doc_id: str, file_path: str, user_id: str = "default"
+) -> None:
+    """
+    Processa currÃ­culo em background: parser â atualiza doc â extrai perfil.
+    """
+    try:
+        await atualizar_status_processamento(doc_id, True, "Analisando documento...")
+        curriculo = await parse_resume(file_path)
+        await asyncio.sleep(0)
+
+        await atualizar_status_processamento(doc_id, True, "Salvando dados...")
+        collection = _db()[COLLECTION]
+        dados = curriculo.model_dump()
+        dados["processando"] = True
+        dados["etapa_processamento"] = "salvando"
+        await collection.update_one(
+            {"_id": ObjectId(doc_id)},
+            {"$set": dados},
+        )
+
+        await atualizar_status_processamento(
+            doc_id, True, "Extraindo perfil profissional..."
+        )
+        doc = await collection.find_one({"_id": ObjectId(doc_id)})
+        if doc:
+            doc["_id"] = str(doc["_id"])
+            await extract_and_save_profile(user_id, doc, _db())
+
+        await atualizar_status_processamento(doc_id, False, "concluido")
+    except Exception as e:
+        from core.logger import logger
+
+        logger.error("curriculo.processamento_erro", error=str(e), doc_id=doc_id)
+        await atualizar_status_processamento(doc_id, False, f"erro: {e}")
 
 
 async def buscar_curriculo_ativo(user_id: str = "default") -> dict | None:
