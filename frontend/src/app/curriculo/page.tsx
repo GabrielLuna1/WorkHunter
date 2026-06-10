@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { ResumeViewer } from '@/components/resume-viewer/ResumeViewer'
 import { UploadZone } from '@/components/curriculo/UploadZone'
@@ -47,14 +47,9 @@ export default function CurriculoPage() {
   const [subState, setSubState] = useState('')
   const [showInsights, setShowInsights] = useState(false)
   const [viewMode, setViewMode] = useState<'parsed' | 'original'>('parsed')
-  const [processando, setProcessando] = useState(false)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     carregar()
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-    }
   }, [])
 
   async function carregar() {
@@ -73,11 +68,6 @@ export default function CurriculoPage() {
         setVersaoAtiva(curriculo)
         setVersaoAtivaId(curriculo._id)
 
-        if (curriculo.processando) {
-          setProcessando(true)
-          iniciarPolling()
-        }
-
         const hasData = (curriculo.experiencias?.length || 0) + (curriculo.formacoes?.length || 0) > 0
         setViewMode(hasData ? 'parsed' : 'original')
         setPageState('viewer')
@@ -88,28 +78,6 @@ export default function CurriculoPage() {
       setPageState('error')
       setErrorMsg('Erro ao carregar currículo. Verifique se o servidor está rodando.')
     }
-  }
-
-  function iniciarPolling() {
-    if (pollingRef.current) clearInterval(pollingRef.current)
-    pollingRef.current = setInterval(async () => {
-      try {
-        const res = await api.get(`${API}/`)
-        const curriculo = res.data?.data
-        if (curriculo && !curriculo.processando) {
-          if (pollingRef.current) clearInterval(pollingRef.current)
-          pollingRef.current = null
-          setProcessando(false)
-          setVersaoAtiva(curriculo)
-          setVersaoAtivaId(curriculo._id)
-          const hasData = (curriculo.experiencias?.length || 0) + (curriculo.formacoes?.length || 0) > 0
-          setViewMode(hasData ? 'parsed' : 'original')
-          toast.success('Currículo processado!')
-        }
-      } catch {
-        // keep trying
-      }
-    }, 3000)
   }
 
   async function handleSelect(id: string) {
@@ -181,9 +149,10 @@ export default function CurriculoPage() {
     setShowUpload(false)
     setVersaoAtiva(data)
     setVersaoAtivaId(data._id)
-    setProcessando(true)
+
+    const hasData = (data.experiencias?.length || 0) + (data.formacoes?.length || 0) > 0
+    setViewMode(hasData ? 'parsed' : 'original')
     setPageState('viewer')
-    iniciarPolling()
   }
 
   async function handleExport(formato: 'pdf' | 'docx') {
@@ -323,12 +292,7 @@ export default function CurriculoPage() {
                   {versaoLabel}
                 </span>
               )}
-              {processando && (
-                <span className="inline-flex items-center gap-1.5 text-[10px] text-accent bg-accent/8 px-2 py-0.5 rounded-full border border-accent/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                  Analisando perfil…
-                </span>
-              )}
+              {}
               {versaoAtiva?.parsing_confidence != null && (
                 <span
                   className="text-[9px] px-2 py-0.5 rounded-full border font-medium"
@@ -427,14 +391,7 @@ export default function CurriculoPage() {
             </div>
 
             <div className="p-4 space-y-4">
-              {processando ? (
-                <div className="flex flex-col items-center justify-center py-8 gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                  <p className="text-[10px] text-ink-tertiary text-center">
-                    Analisando currículo...
-                  </p>
-                </div>
-              ) : versaoAtiva ? (
+              {versaoAtiva ? (
                 <>
                   <InsightCard
                     label="Seções Detectadas"

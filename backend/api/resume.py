@@ -93,30 +93,24 @@ async def upload_curriculo(file: UploadFile = File(...)):
     perm_path = UPLOAD_DIR / perm_filename
     shutil.move(tmp_path, perm_path)
 
-    # Update file path and mark as processing for profile extraction
+    # Update file path and mark as done (profile extraction runs silently)
     await atualizar_versao(doc["_id"], {"arquivo_original_path": str(perm_path)})
-    await atualizar_status_processamento(
-        doc["_id"], True, "Extraindo perfil profissional..."
-    )
+    await atualizar_status_processamento(doc["_id"], False, "concluido")
 
-    # Refresh doc after updates
+    # Refresh doc
     doc_completo = await buscar_curriculo_ativo()
 
-    # Background: only profile extraction (slow AI part)
+    # Background: silent profile extraction (falha não afeta viewer)
     async def extrair_perfil():
         try:
             doc_atual = await buscar_curriculo_ativo()
             if doc_atual:
                 doc_atual["_id"] = doc_atual.get("_id", doc["_id"])
                 await extract_and_save_profile("default", doc_atual, database.get_db())
-            await atualizar_status_processamento(doc["_id"], False, "concluido")
         except Exception:
             from core.logger import logger
 
-            logger.error("curriculo.extrair_perfil_erro", doc_id=doc["_id"])
-            await atualizar_status_processamento(
-                doc["_id"], False, "erro na extracao de perfil"
-            )
+            logger.error("curriculo.extrair_perfil", doc_id=doc["_id"])
 
     asyncio.create_task(extrair_perfil())
 
