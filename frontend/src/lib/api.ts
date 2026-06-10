@@ -598,6 +598,7 @@ export interface GpuStatus {
   loaded: boolean;
   model: string;
   vram_bytes: number;
+  error?: string;
 }
 
 export async function getGpuStatus(): Promise<GpuStatus> {

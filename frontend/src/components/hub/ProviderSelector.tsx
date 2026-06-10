@@ -100,7 +100,7 @@ export function ProviderSelector() {
             <Cpu className="w-3 h-3" />
             GPU
           </p>
-          {gpu && (
+        {gpu && gpu.error !== "offline" && (
             <span className={`flex items-center gap-1 text-[11px] ${gpu.loaded ? "text-success" : "text-ink-tertiary"}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${gpu.loaded ? "bg-success" : "bg-ink-tertiary"}`} />
               {gpu.loaded ? `${formatVRAM(gpu.vram_bytes)} / 16GB` : "disponivel"}
@@ -109,10 +109,13 @@ export function ProviderSelector() {
         </div>
 
         {gpu === null && (
-          <p className="text-[11px] text-ink-tertiary">Ollama indisponivel</p>
+          <p className="text-[11px] text-ink-tertiary">Verificando status...</p>
+        )}
+        {gpu?.error === "offline" && (
+          <p className="text-[11px] text-warning">Ollama offline — inicie o servidor</p>
         )}
 
-        {gpu && (
+        {gpu && gpu.error !== "offline" && (
           <div className="w-full bg-surface-3 rounded-full h-1.5 mb-2.5 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${

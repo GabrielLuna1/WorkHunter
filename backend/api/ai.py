@@ -67,24 +67,24 @@ async def set_provider(body: SetProviderBody):
 async def gpu_status():
     try:
         return await ai_client.gpu_status()
-    except Exception as e:
-        raise HTTPException(502, f"Ollama indisponivel: {e}")
+    except Exception:
+        return {"loaded": False, "model": "", "vram_bytes": 0, "error": "offline"}
 
 
 @router.post("/provider/gpu/load")
 async def gpu_load():
     try:
         return await ai_client.gpu_load()
-    except Exception as e:
-        raise HTTPException(502, f"Erro ao carregar: {e}")
+    except Exception:
+        return {"status": "error", "error": "offline"}
 
 
 @router.post("/provider/gpu/unload")
 async def gpu_unload():
     try:
         return await ai_client.gpu_unload()
-    except Exception as e:
-        raise HTTPException(502, f"Erro ao descarregar: {e}")
+    except Exception:
+        return {"status": "error", "error": "offline"}
 
 
 @router.post("/provider/circuit-breaker/reset")

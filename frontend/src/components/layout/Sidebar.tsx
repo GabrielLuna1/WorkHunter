@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Columns, Database, Hexagon, Calendar, FileText, LineChart, Bot } from "lucide-react";
+import { LayoutDashboard, Columns, Database, Hexagon, Calendar, FileText, LineChart, Bot, Github } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -58,7 +58,16 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="p-4 mt-auto">
+      <div className="p-4 mt-auto space-y-2">
+        <a
+          href="https://github.com/GabrielLuna1/WorkHunter"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] font-medium text-ink-muted hover:text-ink hover:bg-surface-2 transition-colors"
+        >
+          <Github className="w-5 h-5" />
+          <span>Repositório</span>
+        </a>
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface border border-hairline group hover:border-hairline-strong transition-colors cursor-default">
           <Database className="w-5 h-5 text-ink-subtle group-hover:text-ink transition-colors" />
           <div className="flex-1">
