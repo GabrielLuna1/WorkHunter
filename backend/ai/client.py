@@ -104,7 +104,18 @@ def _ollama_base() -> str:
     return settings.ollama_url.rstrip("/")
 
 
+def reset_circuit_breaker() -> None:
+    _circuit_breaker.reset()
+
+
 async def gpu_load() -> dict:
+    active = get_active_provider()
+    if active == "lm_studio":
+        return {
+            "status": "always_loaded",
+            "model": settings.lm_studio_model,
+            "note": "LM Studio gerencia a GPU automaticamente",
+        }
     url = f"{_ollama_base()}/api/generate"
     model = settings.ollama_model
     payload = {"model": model, "prompt": "", "keep_alive": -1, "stream": False}
@@ -115,6 +126,13 @@ async def gpu_load() -> dict:
 
 
 async def gpu_unload() -> dict:
+    active = get_active_provider()
+    if active == "lm_studio":
+        return {
+            "status": "always_loaded",
+            "model": settings.lm_studio_model,
+            "note": "LM Studio gerencia a GPU automaticamente",
+        }
     url = f"{_ollama_base()}/api/generate"
     model = settings.ollama_model
     payload = {"model": model, "prompt": "", "keep_alive": 0, "stream": False}
@@ -125,6 +143,14 @@ async def gpu_unload() -> dict:
 
 
 async def gpu_status() -> dict:
+    active = get_active_provider()
+    if active == "lm_studio":
+        return {
+            "loaded": True,
+            "model": settings.lm_studio_model,
+            "vram_bytes": 0,
+            "note": "LM Studio gerenciamento externo",
+        }
     url = f"{_ollama_base()}/api/ps"
     model = settings.ollama_model
     async with httpx.AsyncClient(timeout=10) as client:

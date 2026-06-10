@@ -87,6 +87,12 @@ async def gpu_unload():
         raise HTTPException(502, f"Erro ao descarregar: {e}")
 
 
+@router.post("/provider/circuit-breaker/reset")
+async def reset_cb():
+    ai_client.reset_circuit_breaker()
+    return {"status": "reset"}
+
+
 # ─── Sessions ─────────────────────────────────────────────────
 
 
